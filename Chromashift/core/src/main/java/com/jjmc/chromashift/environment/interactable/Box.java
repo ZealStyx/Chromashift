@@ -104,35 +104,32 @@ public class Box implements Interactable, Pickable, com.jjmc.chromashift.environ
             vy *= (1f - airDamping * delta * 0.5f);
         }
 
-        // Integrate
-        Rectangle before = new Rectangle(bounds);
+        // Integrate - reuse temp rects to avoid GC
+        tmpBefore.set(bounds);
         x += vx * delta;
         y += vy * delta;
         bounds.set(x, y, width, height);
 
         // Resolve collisions against solids (walls, platforms, doors)
         if (solids != null) {
-            Rectangle resolved = new Rectangle(bounds);
+            tmpResolved.set(bounds);
+            Rectangle resolved = tmpResolved;
             PlayerCollision.resolveSolidCollision(resolved, solids);
 
-            // apply resolved position and adjust velocities if blocked
-            float appliedX = resolved.x - before.x;
-            float appliedY = resolved.y - before.y;
+            float appliedX = resolved.x - tmpBefore.x;
+            float appliedY = resolved.y - tmpBefore.y;
 
-            // If horizontal corrected, zero horizontal velocity
-            if (Math.abs(appliedX - (x - before.x)) > 0.001f) {
+            if (Math.abs(appliedX - (x - tmpBefore.x)) > 0.001f) {
                 vx = 0f;
             }
-            // If vertical corrected, zero vertical velocity
-            if (Math.abs(appliedY - (y - before.y)) > 0.001f) {
+            if (Math.abs(appliedY - (y - tmpBefore.y)) > 0.001f) {
                 vy = 0f;
             }
 
             x = resolved.x;
             y = resolved.y;
             bounds.set(x, y, width, height);
-            // Track if we landed on ground (vertical correction upward)
-            wasGroundedLastFrame = (resolved.y > before.y) || (Math.abs(vy) < 0.1f && resolved.y == before.y);
+            wasGroundedLastFrame = (resolved.y > tmpBefore.y) || (Math.abs(vy) < 0.1f && resolved.y == tmpBefore.y);
         } else {
             wasGroundedLastFrame = false;
         }
@@ -382,9 +379,8 @@ public class Box implements Interactable, Pickable, com.jjmc.chromashift.environ
 
     @Override
     public void checkInteraction(Rectangle playerHitbox) {
-        // player can interact when near (small radius)
-        Rectangle r = new Rectangle(bounds.x - 8, bounds.y - 8, bounds.width + 16, bounds.height + 16);
-        inRange = playerHitbox.overlaps(r);
+        tmpRange.set(bounds.x - 8, bounds.y - 8, bounds.width + 16, bounds.height + 16);
+        inRange = playerHitbox.overlaps(tmpRange);
     }
 
     @Override

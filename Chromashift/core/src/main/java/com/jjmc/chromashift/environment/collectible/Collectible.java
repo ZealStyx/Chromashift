@@ -60,11 +60,12 @@ public abstract class Collectible {
     /**
      * Check if the player is overlapping with this collectible and collect it if so.
      */
+        private final Rectangle tmpPlayerBounds = new Rectangle();
     public void checkCollision(Player player) {
         if (collected) return;
-        
         Rectangle collectibleBounds = getBounds();
-        Rectangle playerBounds = new Rectangle(
+        tmpPlayerBounds.set(player.getHitboxX(), player.getHitboxY(), player.getHitboxWidth(), player.getHitboxHeight());
+        Rectangle playerBounds = tmpPlayerBounds; Rectangle(
             player.getHitboxX(), 
             player.getHitboxY(), 
             player.getHitboxWidth(), 

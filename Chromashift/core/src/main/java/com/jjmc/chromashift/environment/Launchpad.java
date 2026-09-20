@@ -217,12 +217,8 @@ public class Launchpad implements Interactable, Solid {
         boolean canLaunchNow = (launchCooldown <= 0f) || activationArmed;
         if (!canLaunchNow) return;
 
-        Rectangle playerBounds = new Rectangle(
-            player.getHitboxX(),
-            player.getHitboxY(),
-            player.getHitboxWidth(),
-            player.getHitboxHeight()
-        );
+        tmpPlayerBounds.set(player.getHitboxX(), player.getHitboxY(), player.getHitboxWidth(), player.getHitboxHeight());
+        Rectangle playerBounds = tmpPlayerBounds;
 
         if (detectionBounds.overlaps(playerBounds)) {
             if (!activationArmed) activationArmed = true;
