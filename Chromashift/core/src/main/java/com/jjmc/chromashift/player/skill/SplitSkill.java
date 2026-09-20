@@ -76,7 +76,7 @@ public class SplitSkill extends BaseSkill {
             animator.play("cast", false);
         }
         
-        Gdx.app.log("SplitSkill", "Split projectile launched!");
+        // log removed
     }
     
     @Override
@@ -94,16 +94,16 @@ public class SplitSkill extends BaseSkill {
             boolean shouldSplit = mainProjectile.shouldSplit();
             boolean hasHit = mainProjectile.hasHit();
             
-            Gdx.app.log("SplitSkill", "Main projectile inactive: shouldSplit=" + shouldSplit + ", hasHit=" + hasHit);
+            // log removed
             
             if (shouldSplit) {
                 // Spawn the three here
                 spawnSplitProjectiles();
-                Gdx.app.log("SplitSkill", "✓ SPAWNED 3 SPLIT PROJECTILES!");
+                // log removed
             } else if (hasHit) {
-                Gdx.app.log("SplitSkill", "Main projectile hit target - no split");
+                // log removed
             } else {
-                Gdx.app.log("SplitSkill", "Main projectile died without split or hit (lifetime expired?)");
+                // log removed
             }
             mainProjectile = null;
             
@@ -114,7 +114,7 @@ public class SplitSkill extends BaseSkill {
     
     private void spawnSplitProjectiles() {
         if (mainProjectile == null) {
-            Gdx.app.error("SplitSkill", "Cannot spawn splits: mainProjectile is null!");
+            // error log removed - fail silently
             return;
         }
         
@@ -122,7 +122,7 @@ public class SplitSkill extends BaseSkill {
         Vector2 spawnPos = mainProjectile.getPosition();
         Vector2 mainDir = mainProjectile.getDirection();
         
-        Gdx.app.log("SplitSkill", "Spawning splits at position: (" + spawnPos.x + ", " + spawnPos.y + "), direction: " + mainDir);
+        // log removed
         
         int spawnedCount = 0;
         
@@ -133,7 +133,7 @@ public class SplitSkill extends BaseSkill {
             // Spread from the original direction
                 Vector2 spreadDir = mainDir.cpy().rotateDeg(angleOffset).nor();
                 
-                Gdx.app.log("SplitSkill", "  Creating split #" + (spawnedCount + 1) + " at angle offset " + angleOffset + "°");
+                // log removed
                 
                 // Spawn a homing split projectile
                 Projectile split = new Projectile(
@@ -157,19 +157,23 @@ public class SplitSkill extends BaseSkill {
                 player.activeProjectiles.add(split);
                 spawnedCount++;
                 
-                Gdx.app.log("SplitSkill", "    ✓ Split #" + spawnedCount + " created and added to lists");
+                // log removed
             } catch (Exception e) {
                 Gdx.app.error("SplitSkill", "Failed to create split projectile at angle " + angleOffset, e);
             }
         }
         
-        Gdx.app.log("SplitSkill", "=== SPLIT COMPLETE: " + spawnedCount + "/3 projectiles spawned at (" + spawnPos.x + ", " + spawnPos.y + ") ===");
+        // log removed
     }
     
     public void updateProjectiles(float delta) {
         for (int i = projectiles.size - 1; i >= 0; --i) {
             Projectile proj = projectiles.get(i);
-            if (!proj.isActive()) {
+            if (proj == null || !proj.isActive()) {
+                if (proj != null) {
+                    player.activeProjectiles.removeValue(proj, true);
+                    proj.dispose();
+                }
                 projectiles.removeIndex(i);
             }
         }
@@ -195,20 +199,22 @@ public class SplitSkill extends BaseSkill {
         currentCooldown = cooldownTime;
         mainProjectile = null;
         
-        Gdx.app.log("SplitSkill", "Deactivated!");
+        // log removed
     }
     
     private Vector2 getMouseWorldPosition() {
-        // Rough screen->world guess
-        float mouseX = Gdx.input.getX();
-        float mouseY = Gdx.input.getY();
-        
-        // Use relative direction from screen center
-        Vector2 playerPos = new Vector2(player.getX(), player.getY());
-        Vector2 screenCenter = new Vector2(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
-        Vector2 mouseDiff = new Vector2(mouseX - screenCenter.x, screenCenter.y - mouseY);
-        
-        return playerPos.add(mouseDiff.nor().scl(100f));
+        try {
+            com.badlogic.gdx.math.Vector3 mouseVec = new com.badlogic.gdx.math.Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+            java.lang.reflect.Field camField = player.getClass().getDeclaredField("gameCamera");
+            camField.setAccessible(true);
+            com.badlogic.gdx.graphics.Camera cam = (com.badlogic.gdx.graphics.Camera) camField.get(player);
+            if (cam != null) {
+                cam.unproject(mouseVec);
+                return new Vector2(mouseVec.x, mouseVec.y);
+            }
+        } catch (Exception ignored) {}
+        float dir = player.isFacingLeft() ? -1f : 1f;
+        return new Vector2(player.getX() + dir * 100f, player.getY() + player.getHitboxHeight() / 2f);
     }
     
     public void dispose() {

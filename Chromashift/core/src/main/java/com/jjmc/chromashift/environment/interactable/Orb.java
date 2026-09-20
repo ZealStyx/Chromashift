@@ -242,7 +242,7 @@ public class Orb implements Interactable, Pickable {
 
     // PIXEL for batch drawing (lazy)
     private static com.badlogic.gdx.graphics.Texture PIXEL;
-    private static void ensurePixel(SpriteBatch batch) {
+    private static void ensurePixel() {
         if (PIXEL == null) {
             com.badlogic.gdx.graphics.Pixmap pm = new com.badlogic.gdx.graphics.Pixmap(1,1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
             pm.setColor(com.badlogic.gdx.graphics.Color.WHITE);
@@ -336,6 +336,10 @@ public class Orb implements Interactable, Pickable {
         }
     }
 
+    public static void disposeStatic() {
+        if (PIXEL != null) { try { PIXEL.dispose(); } catch (Exception ignored) {} PIXEL = null; }
+        if (ORB_CIRCLE != null) { try { ORB_CIRCLE.dispose(); } catch (Exception ignored) {} ORB_CIRCLE = null; }
+    }
     @Override
     public void interact() {
         // small upward impulse

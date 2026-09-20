@@ -29,7 +29,7 @@ public abstract class Collectible {
      * Can be overridden by subclasses or set explicitly.
      */
     protected String generateDefaultId() {
-        return getClass().getSimpleName() + "_" + ((int)x) + "_" + ((int)y);
+        return String.format("%s_%.1f_%.1f", getClass().getSimpleName(), x, y);
     }
 
     /**
@@ -77,8 +77,10 @@ public abstract class Collectible {
         }
     }
 
+    private final Rectangle boundsCache = new Rectangle();
     public Rectangle getBounds() {
-        return new Rectangle(x, y, width, height);
+        boundsCache.set(x, y, width, height);
+        return boundsCache;
     }
 
     public boolean isCollected() {

@@ -74,7 +74,7 @@ public class ShurikenSkill extends BaseSkill {
             animator.play("cast", false);
         }
         
-        Gdx.app.log("ShurikenSkill", "Shuriken launched toward: " + mousePos);
+        // log removed
     }
     
     @Override
@@ -96,7 +96,11 @@ public class ShurikenSkill extends BaseSkill {
     public void updateProjectiles(float delta) {
         for (int i = projectiles.size - 1; i >= 0; --i) {
             Projectile proj = projectiles.get(i);
-            if (!proj.isActive()) {
+            if (proj == null || !proj.isActive()) {
+                if (proj != null) {
+                    player.activeProjectiles.removeValue(proj, true);
+                    proj.dispose();
+                }
                 projectiles.removeIndex(i);
             }
         }
@@ -122,20 +126,25 @@ public class ShurikenSkill extends BaseSkill {
         currentCooldown = cooldownTime;
         activeProjectile = null;
         
-        Gdx.app.log("ShurikenSkill", "Deactivated!");
+        // log removed
     }
     
     private Vector2 getMouseWorldPosition() {
-        // Screen -> world (approx)
-        float mouseX = Gdx.input.getX();
-        float mouseY = Gdx.input.getY();
-        
-        // Use relative direction from screen center
-        Vector2 playerPos = new Vector2(player.getX(), player.getY());
-        Vector2 screenCenter = new Vector2(Gdx.graphics.getWidth() / 2f, Gdx.graphics.getHeight() / 2f);
-        Vector2 mouseDiff = new Vector2(mouseX - screenCenter.x, screenCenter.y - mouseY);
-        
-        return playerPos.add(mouseDiff.nor().scl(100f));
+        // Use camera unproject if available, otherwise fallback to player facing direction
+        try {
+            com.badlogic.gdx.math.Vector3 mouseVec = new com.badlogic.gdx.math.Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+            // Try to get camera from player
+            java.lang.reflect.Field camField = player.getClass().getDeclaredField("gameCamera");
+            camField.setAccessible(true);
+            com.badlogic.gdx.graphics.Camera cam = (com.badlogic.gdx.graphics.Camera) camField.get(player);
+            if (cam != null) {
+                cam.unproject(mouseVec);
+                return new Vector2(mouseVec.x, mouseVec.y);
+            }
+        } catch (Exception ignored) {}
+        // Fallback: aim in facing direction
+        float dir = player.isFacingLeft() ? -1f : 1f;
+        return new Vector2(player.getX() + dir * 100f, player.getY() + player.getHitboxHeight() / 2f);
     }
     
     public void dispose() {

@@ -97,9 +97,9 @@ public class Wall implements Solid {
         return true;
     }
 
+    private final TextureRegion cachedPartial = new TextureRegion();
     @Override
     public void render(SpriteBatch batch) {
-        // Tile the 32x32 solid texture across the wall bounds without stretching
         final int TILE = 32;
         int tilesX = (int)Math.ceil(bounds.width / TILE);
         int tilesY = (int)Math.ceil(bounds.height / TILE);
@@ -118,8 +118,9 @@ public class Wall implements Solid {
                 } else {
                     int drawW = Math.max(1, (int)remainingW);
                     int drawH = Math.max(1, (int)remainingH);
-                    TextureRegion part = new TextureRegion(solidRegion.getTexture(), baseX, baseY, drawW, drawH);
-                    batch.draw(part, drawX, drawY, drawW, drawH);
+                    cachedPartial.setTexture(solidRegion.getTexture());
+                    cachedPartial.setRegion(baseX, baseY, drawW, drawH);
+                    batch.draw(cachedPartial, drawX, drawY, drawW, drawH);
                 }
             }
         }
@@ -136,6 +137,9 @@ public class Wall implements Solid {
         return true;
     }
 
+    public static void disposeStatic() {
+        dispose();
+    }
     public static void dispose() {
         if (solidTexture != null) {
             solidTexture.dispose();

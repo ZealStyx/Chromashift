@@ -103,7 +103,7 @@ public class Launchpad implements Interactable, Solid {
                 float solidY = y + (spriteH - solidH) / 2f;
                 this.solidBounds = new Rectangle(solidX, solidY, solidW, solidH);
                 
-            } else { // LEFT
+            } else { // RIGHT
                 // Detection on left side (8x36 vertical)
                 float detectionW = 16f, detectionH = 20f;
                 float detectionX = x;
@@ -278,9 +278,9 @@ public class Launchpad implements Interactable, Solid {
         
         // Set player facing direction based on launch direction
         if (direction == LaunchDirection.LEFT) {
-            player.setFacingLeft(false);
-        } else if (direction == LaunchDirection.RIGHT) {
             player.setFacingLeft(true);
+        } else if (direction == LaunchDirection.RIGHT) {
+            player.setFacingLeft(false);
         }
         // For UP direction, keep current facing
         
@@ -318,7 +318,7 @@ public class Launchpad implements Interactable, Solid {
     }
 
     private void launchOrb(Orb orb) {
-        float launchVx = direction.dx * launchSpeed;
+        float launchVx = -direction.dx * launchSpeed;
         float launchVy = direction.dy * launchSpeed;
         float vx = orb.getVelocityX();
         float vy = orb.getVelocityY();

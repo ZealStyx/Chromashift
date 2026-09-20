@@ -190,14 +190,14 @@ public class Portal implements Interactable {
     @Override
     public void render(SpriteBatch batch) {
         if (batch == null) return;
-
-        // Ensure the correct animation is playing for current state
+        // Don't re-play animation every frame - update() handles state transitions
+        // Only ensure first frame shown when inactive
         if (state == PortalState.INACTIVE) {
-            anim.play("SPAWN", false);
-            anim.setFrame(0);
+            // Ensure animator is on first frame without restarting each frame
+            if (anim.getCurrentFrameIndex() != 0) {
+                anim.setFrame(0);
+            }
         }
-
-        // Draw centered (bounds are already sized)
         anim.render(batch, bounds.x, bounds.y, bounds.width, bounds.height);
     }
     

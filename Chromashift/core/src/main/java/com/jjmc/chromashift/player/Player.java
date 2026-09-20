@@ -1079,7 +1079,7 @@ public class Player {
         isDying = false;
 
         // Play defeat sound (randomize between Defeat1 and Defeat2)
-        if (Math.random() < 0.5) {
+        if (com.badlogic.gdx.math.MathUtils.randomBoolean()) {
             SoundManager.play("Defeat1");
         } else {
             SoundManager.play("Defeat2");
@@ -1216,12 +1216,12 @@ public class Player {
         return config.dashCooldown;
     }
 
+    private static final Color DEBUG_HITBOX_COLOR = new Color(1f, 0f, 0f, 0.4f);
     public void debugDrawHitbox(ShapeRenderer shape) {
-        shape.setColor(new Color(1f, 0f, 0f, 0.4f));
+        shape.setColor(DEBUG_HITBOX_COLOR);
         shape.rect(getHitboxX(), getHitboxY(), getHitboxWidth(), getHitboxHeight());
         shape.setColor(onWall ? Color.RED : Color.CYAN);
         shape.circle(wallSensor.x, wallSensor.y, wallSensor.radius);
-        // Draw back sensor in magenta
         shape.setColor(Color.MAGENTA);
         shape.circle(backSensor.x, backSensor.y, backSensor.radius);
         float centerX = getHitboxX() + getHitboxWidth() / 2;

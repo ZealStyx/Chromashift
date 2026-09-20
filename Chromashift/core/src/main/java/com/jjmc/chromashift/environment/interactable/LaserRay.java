@@ -137,7 +137,8 @@ public class LaserRay implements Interactable {
         return bounds;
     }
 
-    @Override public void update(float delta) { cachedPoints = cast(mirrors, glasses, solids, System.currentTimeMillis()/1000f); }
+    private float gameTime = 0f;
+    @Override public void update(float delta) { gameTime += delta; cachedPoints = cast(mirrors, glasses, solids, gameTime); }
 
     @Override
     public void render(SpriteBatch batch) {
@@ -208,6 +209,7 @@ public class LaserRay implements Interactable {
     // PIXEL for batch drawing (lazy)
     private static com.badlogic.gdx.graphics.Texture PIXEL;
 
+    public static void disposeStatic() { if (PIXEL != null) { try { PIXEL.dispose(); } catch (Exception ignored) {} PIXEL = null; } }
     private static void ensurePixel(SpriteBatch batch) {
         if (PIXEL == null) {
             com.badlogic.gdx.graphics.Pixmap pm = new com.badlogic.gdx.graphics.Pixmap(1, 1,

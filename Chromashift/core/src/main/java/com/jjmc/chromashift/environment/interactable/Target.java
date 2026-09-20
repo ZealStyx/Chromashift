@@ -127,49 +127,31 @@ public class Target implements Interactable, Solid {
         for (int i = 0; i < INSTANCES.size; i++) {
             Target t = INSTANCES.get(i);
             boolean wasActive = t.active;
-            // If this frame we were not hit but were previously active, deactivate
             if (!t.hitThisFrame && wasActive) {
                 t.active = false;
                 t.triggerLinks(false);
             }
-            // reset hit flag for next frame
             t.hitThisFrame = false;
-            // update sprite frame to reflect final state
             if (t.anim != null) t.anim.setFrame(t.active ? 1 : 0);
         }
+    }
+    public static void clearInstances() {
+        INSTANCES.clear();
+    }
+    public void dispose() {
+        INSTANCES.removeValue(this, true);
+        if (anim != null) anim.dispose();
     }
 
     private void triggerLinks(boolean open) {
         for (Door d : linkedDoors) {
             d.setOpen(open);
         }
-        for (Interactable i : linkedInteractables) {
-            // For generic interactables, we just call interact().
-            // If they need specific state (like open/close), they might not support it via
-            // interact().
-            // But the prompt says "Trigger all linked objects... Emit
-            // activation/deactivation events just like a lever."
-            // Lever calls interact() on toggle.
-            // But for continuous state (active/inactive), we might need to set state.
-            // However, Interactable interface only has interact().
-            // If the linked object is a Door, we handled it.
-            // If it's something else, we call interact() which usually toggles.
-            // But Target is "Active while laser hits". If it toggles something else
-            // repeatedly, that's bad.
-            // But usually Targets link to Doors or Platforms (Solids).
-            // We'll stick to interact() for generic, setOpen for Doors.
-            if (open) {
-                i.interact();
-            } else {
-                // If it needs deactivation, Interactable doesn't support it generically.
-                // But Lever only calls interact().
-                // Wait, Lever usually toggles. Target is momentary (hold).
-                // If we link a Target to a Lever-controlled object, it might behave weirdly if
-                // it expects toggle.
-                // But for now, this is the best we can do.
-                // Actually, if the user wants "Emit activation/deactivation events just like a
-                // lever",
-                // Lever usually calls setOpen on doors.
+        // For generic interactables, only trigger on activation (open=true) to avoid toggle spam
+        // Deactivation is handled by doors only; generic targets would need explicit close logic
+        if (open) {
+            for (Interactable i : linkedInteractables) {
+                if (i != null) i.interact();
             }
         }
     }

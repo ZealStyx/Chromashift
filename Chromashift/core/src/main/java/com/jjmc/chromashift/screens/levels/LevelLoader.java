@@ -103,6 +103,8 @@ public final class LevelLoader {
     /** Build runtime objects from a LevelState. */
     public static Result build(LevelIO.LevelState state) {
         Result out = new Result();
+        // Clear previous Target instances to avoid leak across level loads
+        try { com.jjmc.chromashift.environment.interactable.Target.clearInstances(); } catch (Exception ignored) {}
         if (state == null)
             return out;
 
