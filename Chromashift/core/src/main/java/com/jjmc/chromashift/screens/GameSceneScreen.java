@@ -1638,36 +1638,34 @@ public class GameSceneScreen implements Screen {
 
     @Override
     public void dispose() {
-        // Autosave on application/window close
         try {
             saveAllState(currentLevelPath);
         } catch (Throwable t) {
             Gdx.app.log("TestSceneScreen", "Autosave on dispose failed: " + t.getMessage());
         }
-        if (ctx != null)
-            ctx.dispose();
-        player.dispose();
-        if (boss != null)
-            boss.disposeParts();
-        if (bossGuardian != null)
-            bossGuardian.dispose();
-        if (backgroundAnimator != null) {
-            backgroundAnimator.dispose();
+        if (ctx != null) ctx.dispose();
+        if (player != null) player.dispose();
+        if (boss != null) boss.disposeParts();
+        if (bossGuardian != null) bossGuardian.dispose();
+        if (backgroundAnimator != null) backgroundAnimator.dispose();
+        for (Interactable i : interactables) {
+            if (i instanceof Button b) b.dispose();
+            if (i instanceof com.jjmc.chromashift.environment.interactable.LockedDoor ld) ld.dispose();
+            if (i instanceof com.jjmc.chromashift.environment.interactable.Target t) t.dispose();
         }
-        // dispose button sprites
-        for (Interactable i : interactables)
-            if (i instanceof Button b)
-                b.dispose();
-        // dispose collectibles
-        for (com.jjmc.chromashift.environment.collectible.Collectible c : collectibles)
-            c.dispose();
-        // dispose shops
-        for (com.jjmc.chromashift.environment.interactable.Shop s : shops)
-            s.dispose();
-        // dispose UI stage
-        if (uiStage != null)
-            uiStage.dispose();
-        // dispose wall/shared textures
-        com.jjmc.chromashift.environment.Wall.dispose();
+        for (com.jjmc.chromashift.environment.collectible.Collectible c : collectibles) c.dispose();
+        for (com.jjmc.chromashift.environment.interactable.Shop s : shops) s.dispose();
+        if (uiStage != null) uiStage.dispose();
+        // Dispose all static shared textures/pixels
+        try { com.jjmc.chromashift.environment.Wall.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Door.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Box.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Glass.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Mirror.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Laser.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.LaserRay.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Orb.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.collectible.HealthPotion.disposeStatic(); } catch (Exception ignored) {}
+        try { com.chromashift.helper.SoundManager.dispose(); } catch (Exception ignored) {}
     }
 }
