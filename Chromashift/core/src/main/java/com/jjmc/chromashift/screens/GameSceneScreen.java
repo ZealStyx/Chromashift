@@ -659,7 +659,7 @@ public class GameSceneScreen implements Screen {
                 } catch (Exception e) {
                     // Player doesn't exist, create it
                     try {
-                        System.out.println("[DEBUG] Creating default player record");
+                        // debug removed
 
                         com.jjmc.chromashift.database.PlayerDAO.createPlayer("DefaultPlayer", currentLevelPath);
                     } catch (Exception ex2) {
@@ -671,11 +671,10 @@ public class GameSceneScreen implements Screen {
                 com.jjmc.chromashift.player.PlayerIO.PlayerState state = com.jjmc.chromashift.player.PlayerIO
                         .capture(player, currentLevelPath, visitedLevels);
                 try {
-                    System.out.println("[DEBUG] Attempting to save player state for ID: 1");
-                    System.out.println(
-                            "[DEBUG] Player state: x=" + state.x + ", y=" + state.y + ", diamonds=" + state.diamonds);
+                    // debug removed
+                    // debug removed
                     com.jjmc.chromashift.database.PlayerDAO.savePlayerState(1, state);
-                    System.out.println("[DEBUG] Save completed successfully");
+                    // debug removed
                     Gdx.app.log("TestSceneScreen", "✓ Player save saved to database");
                 } catch (Exception ex) {
                     System.err.println("[ERROR] Failed to save player state: " + ex.getMessage());
@@ -696,7 +695,7 @@ public class GameSceneScreen implements Screen {
             }
             if (Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
                 try {
-                    System.out.println("[DEBUG] Attempting to load player state for ID: 1");
+                    // debug removed
                     com.jjmc.chromashift.database.PlayerDAO.loadPlayerStateFromDB(1, player);
 
                     // Also restore visited levels
@@ -705,10 +704,10 @@ public class GameSceneScreen implements Screen {
                     if (loadedVisited != null && loadedVisited.size > 0) {
                         visitedLevels.clear();
                         visitedLevels.addAll(loadedVisited);
-                        System.out.println("[DEBUG] Restored " + visitedLevels.size + " visited levels");
+                        // debug removed
                     }
 
-                    System.out.println("[DEBUG] Load completed successfully");
+                    // debug removed
                     Gdx.app.log("TestSceneScreen",
                             "✓ Player loaded from database with " + visitedLevels.size + " visited levels");
                 } catch (Exception ex) {

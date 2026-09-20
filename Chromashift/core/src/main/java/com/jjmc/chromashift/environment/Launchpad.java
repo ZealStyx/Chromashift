@@ -274,7 +274,7 @@ public class Launchpad implements Interactable, Solid {
         // Push horizontally in the launch direction (away from pad)
         float launchVx = -direction.dx * launchSpeed;
         float launchVy = direction.dy * launchSpeed;
-        System.out.println("[Launchpad] Launching player with velocity: vx=" + launchVx + ", vy=" + launchVy + ", dir=" + direction);
+        // log removed
         
         // Set player facing direction based on launch direction
         if (direction == LaunchDirection.LEFT) {

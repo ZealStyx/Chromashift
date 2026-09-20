@@ -49,7 +49,7 @@ public class JumpSkill extends BaseSkill {
             com.chromashift.helper.SoundManager.play("JumpSkill");
         } catch (Exception ignored) {}
         
-        Gdx.app.log("JumpSkill", "Activated!");
+        // log removed
     }
     
     @Override
@@ -95,7 +95,7 @@ public class JumpSkill extends BaseSkill {
             player.setCanJump(true);
         }
         
-        Gdx.app.log("JumpSkill", "Deactivated!");
+        // log removed
     }
     
     public void dispose() {

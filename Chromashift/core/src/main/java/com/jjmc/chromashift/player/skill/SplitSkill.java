@@ -119,8 +119,8 @@ public class SplitSkill extends BaseSkill {
         }
         
         // Keep position/dir before clearing
-        Vector2 spawnPos = mainProjectile.getPosition();
-        Vector2 mainDir = mainProjectile.getDirection();
+        Vector2 spawnPos = mainProjectile.getPositionCopy();
+        Vector2 mainDir = mainProjectile.getDirectionCopy();
         
         // log removed
         
