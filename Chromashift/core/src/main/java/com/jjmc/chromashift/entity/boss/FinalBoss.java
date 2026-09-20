@@ -116,7 +116,7 @@ public class FinalBoss extends Boss {
         if (attackIdx == preferred) return true;
         
         // Other attacks have 20% chance to spawn in wrong trigger zone
-        return Math.random() < 0.20f;
+        return com.badlogic.gdx.math.MathUtils.random() < 0.20f;
     }
 
     // Check if a position is within trigger_6 bounds (attack spawn boundary)
@@ -965,7 +965,7 @@ public class FinalBoss extends Boss {
         int chosen = lastIndex;
         int attempts = 0;
         while (attempts++ < Math.max(1, maxAttempts)) {
-            int candidate = (int)(Math.random() * patterns.length);
+            int candidate = com.badlogic.gdx.math.MathUtils.random(0, patterns.length-1);
             if (candidate != lastIndex) {
                 chosen = candidate;
                 break;
@@ -1014,7 +1014,7 @@ public class FinalBoss extends Boss {
         if (patternsLen > 1) {
             int attempts = 0;
             while (attempts++ < 6) {
-                chosen2 = (int) (Math.random() * patternsLen);
+                chosen2 = com.badlogic.gdx.math.MathUtils.random(0, patternsLen-1);
                 if (chosen2 != phase2PatternIndex) break;
             }
         }
@@ -1064,7 +1064,7 @@ public class FinalBoss extends Boss {
         if (patternsLen > 1) {
             int attempts = 0;
             while (attempts++ < 6) {
-                chosen3 = (int)(Math.random() * patternsLen);
+                chosen3 = com.badlogic.gdx.math.MathUtils.random(0, patternsLen-1);
                 if (chosen3 != phase3PatternIndex) break;
             }
         }

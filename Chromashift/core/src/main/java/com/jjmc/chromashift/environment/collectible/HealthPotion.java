@@ -14,29 +14,31 @@ import com.chromashift.helper.VisibilityCuller;
  */
 public class HealthPotion extends Collectible {
     private static final float POTION_SIZE = 32f;
-    private Texture potionTexture;
-    private TextureRegion potionRegion;
+    private static Texture potionTexture;
+    private static TextureRegion potionRegion;
+    private static int instanceCount = 0;
 
     public HealthPotion(float x, float y) {
         super(x, y, POTION_SIZE, POTION_SIZE);
         loadTexture();
+        instanceCount++;
     }
 
-    private void loadTexture() {
-        try {
-            potionTexture = new Texture(Gdx.files.internal("player/ui/HealthPotion.png"));
-            potionRegion = new TextureRegion(potionTexture, 0, 0, (int) POTION_SIZE, (int) POTION_SIZE);
-        } catch (Exception e) {
-            Gdx.app.error("HealthPotion", "Failed to load potion sprite: " + e.getMessage());
+    private static synchronized void loadTexture() {
+        if (potionTexture == null) {
+            try {
+                potionTexture = new Texture(Gdx.files.internal("player/ui/HealthPotion.png"));
+                potionRegion = new TextureRegion(potionTexture, 0, 0, (int) POTION_SIZE, (int) POTION_SIZE);
+            } catch (Exception e) {
+                Gdx.app.error("HealthPotion", "Failed to load potion sprite: " + e.getMessage());
+            }
         }
     }
 
     @Override
     public void update(float delta) {
         if (collected) return;
-        // Skip culling when disabled (editor)
         if (VisibilityCuller.isEnabled() && !VisibilityCuller.isVisible(getBounds(), 64f)) return;
-        // No animation, static sprite
     }
 
     @Override
@@ -49,21 +51,28 @@ public class HealthPotion extends Collectible {
     @Override
     public void onCollect(Player player) {
         if (player != null) {
-            player.addPotion(1);
-            // Play collection sound
-            try {
-                SoundManager.play("PickUpItem");
-            } catch (Exception e) {
-                Gdx.app.log("HealthPotion", "Collection sound not available");
+            if (player.canAddPotion()) {
+                player.addPotion(1);
+                try {
+                    SoundManager.play("PickUpItem");
+                } catch (Exception e) {
+                    Gdx.app.log("HealthPotion", "Collection sound not available");
+                }
             }
-            Gdx.app.log("HealthPotion", "Collected! Player now has " + player.getPotionCount() + " potions");
         }
     }
 
     @Override
     public void dispose() {
+        instanceCount--;
+        // Only dispose static texture when last instance disposed and not in gameplay
+        // Actual static dispose handled by disposeStatic()
+    }
+    public static void disposeStatic() {
         if (potionTexture != null) {
-            potionTexture.dispose();
+            try { potionTexture.dispose(); } catch (Exception ignored) {}
+            potionTexture = null;
+            potionRegion = null;
         }
     }
 }

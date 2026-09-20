@@ -25,15 +25,20 @@ public class PlayerDAO {
 
         /** Load preferred player color name from players table. Returns null if not set. */
         public static String loadPreferredColor(int playerId) throws SQLException {
+            if (!DatabaseConnection.isAvailable()) return null;
             String sql = "SELECT preferred_color FROM players WHERE player_id=?";
             try (Connection conn = DatabaseConnection.getConnection();
                  PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, playerId);
-                ResultSet rs = ps.executeQuery();
-                if (rs.next()) {
-                    String v = rs.getString("preferred_color");
-                    return (v != null && !v.isEmpty()) ? v : null;
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String v = rs.getString("preferred_color");
+                        return (v != null && !v.isEmpty()) ? v : null;
+                    }
                 }
+            } catch (SQLException e) {
+                System.err.println("[PlayerDAO] loadPreferredColor skipped: " + e.getMessage());
+                return null;
             }
             return null;
         }
@@ -62,27 +67,30 @@ public class PlayerDAO {
     }
     
     /**
-     * Save player state to database using PlayerIO.PlayerState schema only.
-     * This removes any fields not present in PlayerIO capture.
+     * Save player state to database - optional, fails silently if DB unavailable
      */
     public static void savePlayerState(int playerId, PlayerIO.PlayerState state) throws SQLException {
-        Connection conn = DatabaseConnection.getConnection();
-        try {
+        if (!DatabaseConnection.isAvailable()) {
+            // DB not available, file save already done by caller
+            return;
+        }
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            boolean exists = false;
             String checkSql = "SELECT COUNT(*) FROM player_saves WHERE player_id = ?";
-            PreparedStatement ps = conn.prepareStatement(checkSql);
-            ps.setInt(1, playerId);
-            ResultSet rs = ps.executeQuery();
-            rs.next();
-            boolean exists = rs.getInt(1) > 0;
-            ps.close();
-            
+            try (PreparedStatement ps = conn.prepareStatement(checkSql)) {
+                ps.setInt(1, playerId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) exists = rs.getInt(1) > 0;
+                }
+            }
             if (exists) {
                 updatePlayerSaveState(conn, playerId, state);
             } else {
                 insertPlayerSaveState(conn, playerId, state);
             }
-        } finally {
-            try { conn.close(); } catch (Exception ignored) {}
+        } catch (SQLException e) {
+            System.err.println("[PlayerDAO] DB save skipped (file fallback): " + e.getMessage());
+            // Don't throw - let file save be primary
         }
     }
 
@@ -134,7 +142,9 @@ public class PlayerDAO {
             ps.setFloat(i++, s.respawnX);
             ps.setFloat(i++, s.respawnY);
             ps.setString(i++, s.currentLevel);
-            ps.setString(i++, gson.toJson(s.visitedLevels));
+            // Serialize visited levels as String[] for Gson compatibility
+            String[] visitedArr = s.visitedLevels != null ? s.visitedLevels.toArray(String.class) : new String[0];
+            ps.setString(i++, gson.toJson(visitedArr));
             ps.setString(i++, gson.toJson(s));
             ps.setLong(i++, System.currentTimeMillis());
             ps.executeUpdate();
@@ -189,7 +199,9 @@ public class PlayerDAO {
             ps.setFloat(i++, s.respawnX);
             ps.setFloat(i++, s.respawnY);
             ps.setString(i++, s.currentLevel);
-            ps.setString(i++, gson.toJson(s.visitedLevels));
+            // Serialize visited levels as String[] for Gson compatibility
+            String[] visitedArr = s.visitedLevels != null ? s.visitedLevels.toArray(String.class) : new String[0];
+            ps.setString(i++, gson.toJson(visitedArr));
             ps.setString(i++, gson.toJson(s));
             ps.setLong(i++, System.currentTimeMillis());
             ps.setInt(i++, playerId);
@@ -198,27 +210,26 @@ public class PlayerDAO {
         }
     }
     /**
-     * Save player state to database
+     * Save player state to database - optional fallback
      */
     public static void savePlayer(int playerId, PlayerSaveData playerData) throws SQLException {
-        Connection conn = DatabaseConnection.getConnection();
-        try {
-            // First, check if save exists
+        if (!DatabaseConnection.isAvailable()) return;
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            boolean exists = false;
             String checkSql = "SELECT COUNT(*) FROM player_saves WHERE player_id = ?";
-            PreparedStatement ps = conn.prepareStatement(checkSql);
-            ps.setInt(1, playerId);
-            ResultSet rs = ps.executeQuery();
-            rs.next();
-            boolean exists = rs.getInt(1) > 0;
-            ps.close();
-            
+            try (PreparedStatement ps = conn.prepareStatement(checkSql)) {
+                ps.setInt(1, playerId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) exists = rs.getInt(1) > 0;
+                }
+            }
             if (exists) {
                 updatePlayerSave(conn, playerId, playerData);
             } else {
                 insertPlayerSave(conn, playerId, playerData);
             }
-        } finally {
-            try { conn.close(); } catch (Exception ignored) {}
+        } catch (SQLException e) {
+            System.err.println("[PlayerDAO] savePlayer skipped: " + e.getMessage());
         }
     }
     
@@ -274,7 +285,8 @@ public class PlayerDAO {
             ps.setFloat(paramIndex++, playerData.respawnX);
             ps.setFloat(paramIndex++, playerData.respawnY);
             ps.setString(paramIndex++, playerData.currentLevel);
-            ps.setString(paramIndex++, gson.toJson(playerData.visitedLevels));
+            String[] visitedArrLegacy = playerData.visitedLevels != null ? playerData.visitedLevels.toArray(String.class) : new String[0];
+            ps.setString(paramIndex++, gson.toJson(visitedArrLegacy));
             ps.setString(paramIndex++, gson.toJson(playerData));
             ps.setLong(paramIndex++, playerData.saveTimestamp);
             
@@ -334,7 +346,8 @@ public class PlayerDAO {
             ps.setFloat(paramIndex++, playerData.respawnX);
             ps.setFloat(paramIndex++, playerData.respawnY);
             ps.setString(paramIndex++, playerData.currentLevel);
-            ps.setString(paramIndex++, gson.toJson(playerData.visitedLevels));
+            String[] visitedArr2 = playerData.visitedLevels != null ? playerData.visitedLevels.toArray(String.class) : new String[0];
+            ps.setString(paramIndex++, gson.toJson(visitedArr2));
             ps.setString(paramIndex++, gson.toJson(playerData));
             ps.setLong(paramIndex++, playerData.saveTimestamp);
             ps.setInt(paramIndex++, playerId);
@@ -354,20 +367,20 @@ public class PlayerDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setInt(1, playerId);
-            ResultSet rs = ps.executeQuery();
-            
-            if (rs.next()) {
-                String jsonData = rs.getString("save_data_json");
-                PlayerSaveData playerData = gson.fromJson(jsonData, PlayerSaveData.class);
-                System.out.println("✓ Player loaded (ID: " + playerId + ")");
-                return playerData;
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String jsonData = rs.getString("save_data_json");
+                    PlayerSaveData playerData = gson.fromJson(jsonData, PlayerSaveData.class);
+                    System.out.println("✓ Player loaded (ID: " + playerId + ")");
+                    return playerData;
+                }
             }
         }
         throw new SQLException("Player save not found for ID: " + playerId);
     }
     
     /**
-     * Get player ID by name
+     * Get player ID by name - with proper resource closing
      */
     public static int getPlayerIdByName(String playerName) throws SQLException {
         String sql = "SELECT player_id FROM players WHERE player_name = ?";
@@ -376,10 +389,10 @@ public class PlayerDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, playerName);
-            ResultSet rs = ps.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt("player_id");
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("player_id");
+                }
             }
         }
         throw new SQLException("Player not found: " + playerName);
@@ -387,8 +400,6 @@ public class PlayerDAO {
     
     /**
      * Load player state from database and return as PlayerIO.PlayerState object.
-     * @param playerId player ID
-     * @return PlayerIO.PlayerState loaded from database
      */
     public static com.jjmc.chromashift.player.PlayerIO.PlayerState loadPlayerStateFromDB(int playerId) throws SQLException {
         String sql = "SELECT save_data_json FROM player_saves WHERE player_id = ?";
@@ -397,14 +408,14 @@ public class PlayerDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setInt(1, playerId);
-            ResultSet rs = ps.executeQuery();
-            
-            if (rs.next()) {
-                String jsonData = rs.getString("save_data_json");
-                com.jjmc.chromashift.player.PlayerIO.PlayerState state = 
-                    gson.fromJson(jsonData, com.jjmc.chromashift.player.PlayerIO.PlayerState.class);
-                System.out.println("✓ PlayerState loaded from database (ID: " + playerId + ")");
-                return state;
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String jsonData = rs.getString("save_data_json");
+                    com.jjmc.chromashift.player.PlayerIO.PlayerState state = 
+                        gson.fromJson(jsonData, com.jjmc.chromashift.player.PlayerIO.PlayerState.class);
+                    System.out.println("✓ PlayerState loaded from database (ID: " + playerId + ")");
+                    return state;
+                }
             }
         }
         throw new SQLException("Player save not found for ID: " + playerId);
@@ -425,10 +436,8 @@ public class PlayerDAO {
 
     /**
      * Load visited levels from database for a player.
-     * @param playerId player ID
-     * @return Array of visited level paths
+     * Handles both proper JSON array and legacy libGDX Array serialization.
      */
-    @SuppressWarnings("unchecked")
     public static com.badlogic.gdx.utils.Array<String> loadVisitedLevelsFromDB(int playerId) throws SQLException {
         String sql = "SELECT visited_levels_json FROM player_saves WHERE player_id = ?";
         
@@ -436,15 +445,36 @@ public class PlayerDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setInt(1, playerId);
-            ResultSet rs = ps.executeQuery();
-            
-            if (rs.next()) {
-                String jsonData = rs.getString("visited_levels_json");
-                if (jsonData != null && !jsonData.isEmpty()) {
-                    com.badlogic.gdx.utils.Array<String> visitedLevels = 
-                        gson.fromJson(jsonData, com.badlogic.gdx.utils.Array.class);
-                    System.out.println("✓ Visited levels loaded from database (ID: " + playerId + "): " + visitedLevels.size + " levels");
-                    return visitedLevels != null ? visitedLevels : new com.badlogic.gdx.utils.Array<>();
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String jsonData = rs.getString("visited_levels_json");
+                    if (jsonData != null && !jsonData.isEmpty()) {
+                        com.badlogic.gdx.utils.Array<String> result = new com.badlogic.gdx.utils.Array<>();
+                        try {
+                            // Try as String[] first
+                            String[] arr = gson.fromJson(jsonData, String[].class);
+                            if (arr != null) {
+                                for (String s : arr) result.add(s);
+                            }
+                        } catch (Exception e) {
+                            try {
+                                // Try as List
+                                java.util.List<String> list = gson.fromJson(jsonData, new com.google.gson.reflect.TypeToken<java.util.List<String>>(){}.getType());
+                                if (list != null) result.addAll(list.toArray(new String[0]));
+                            } catch (Exception e2) {
+                                // Legacy format - try to extract items array via JsonParser
+                                try {
+                                    com.google.gson.JsonObject obj = gson.fromJson(jsonData, com.google.gson.JsonObject.class);
+                                    if (obj.has("items")) {
+                                        String[] items = gson.fromJson(obj.get("items"), String[].class);
+                                        if (items != null) for (String s : items) if (s != null) result.add(s);
+                                    }
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                        System.out.println("✓ Visited levels loaded (ID: " + playerId + "): " + result.size + " levels");
+                        return result;
+                    }
                 }
             }
         }

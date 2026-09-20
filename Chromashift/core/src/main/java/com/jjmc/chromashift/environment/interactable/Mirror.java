@@ -88,6 +88,9 @@ public class Mirror implements Interactable {
         }
     }
 
+    public static void disposeStatic() {
+        if (PIXEL != null) { try { PIXEL.dispose(); } catch (Exception ignored) {} PIXEL = null; }
+    }
     @Override
     public void debugDraw(ShapeRenderer sr) {
         // Draw bounds

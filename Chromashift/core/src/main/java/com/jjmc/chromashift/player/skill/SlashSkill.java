@@ -64,7 +64,7 @@ public class SlashSkill extends BaseSkill {
             com.chromashift.helper.SoundManager.play("SlashSkill");
         } catch (Exception ignored) {}
         
-        Gdx.app.log("SlashSkill", "Activated!");
+        // log removed for performance
     }
     
     @Override
@@ -110,9 +110,11 @@ public class SlashSkill extends BaseSkill {
     @Override
     public void debugDraw(ShapeRenderer shape) {
         if (!isActive) return;
-        
-        float aoeX = player.getX() - AOE_SIZE / 2f;
-        float aoeY = player.getY() - AOE_SIZE / 2f;
+        // Use same center as actual hitbox to match debug with logic
+        float centerX = player.getHitboxX() + player.getHitboxWidth() / 2f;
+        float centerY = player.getHitboxY() + player.getHitboxHeight() / 2f;
+        float aoeX = centerX - AOE_SIZE / 2f;
+        float aoeY = centerY - AOE_SIZE / 2f;
         shape.setColor(Color.RED);
         shape.rect(aoeX, aoeY, AOE_SIZE, AOE_SIZE);
     }
@@ -146,7 +148,7 @@ public class SlashSkill extends BaseSkill {
             }
         }
         
-        Gdx.app.log("SlashSkill", "Deactivated! Hit " + hitEnemies.size + " enemies.");
+        hitEnemies.clear();
     }
     
     public void dispose() {

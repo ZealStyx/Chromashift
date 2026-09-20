@@ -29,7 +29,7 @@ public abstract class Collectible {
      * Can be overridden by subclasses or set explicitly.
      */
     protected String generateDefaultId() {
-        return getClass().getSimpleName() + "_" + ((int)x) + "_" + ((int)y);
+        return String.format("%s_%.1f_%.1f", getClass().getSimpleName(), x, y);
     }
 
     /**
@@ -60,11 +60,12 @@ public abstract class Collectible {
     /**
      * Check if the player is overlapping with this collectible and collect it if so.
      */
+        private final Rectangle tmpPlayerBounds = new Rectangle();
     public void checkCollision(Player player) {
         if (collected) return;
-        
         Rectangle collectibleBounds = getBounds();
-        Rectangle playerBounds = new Rectangle(
+        tmpPlayerBounds.set(player.getHitboxX(), player.getHitboxY(), player.getHitboxWidth(), player.getHitboxHeight());
+        Rectangle playerBounds = tmpPlayerBounds; Rectangle(
             player.getHitboxX(), 
             player.getHitboxY(), 
             player.getHitboxWidth(), 
@@ -77,8 +78,10 @@ public abstract class Collectible {
         }
     }
 
+    private final Rectangle boundsCache = new Rectangle();
     public Rectangle getBounds() {
-        return new Rectangle(x, y, width, height);
+        boundsCache.set(x, y, width, height);
+        return boundsCache;
     }
 
     public boolean isCollected() {

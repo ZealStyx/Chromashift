@@ -61,9 +61,11 @@ public class LockedDoor implements Interactable, Solid {
 
     @Override
     public Rectangle getBounds() {
-        // Return null when open to signal no collision (engine checks isSolid too)
-        if (open) return null; // collision disabled
         return bounds;
+    }
+    @Override
+    public Rectangle getCollisionBounds() {
+        return open ? null : bounds;
     }
 
     @Override
@@ -112,7 +114,7 @@ public class LockedDoor implements Interactable, Solid {
     @Override
     public boolean canInteract() {
         if (open || player == null) return false;
-        return player.getKeyCount() > 0 && bounds != null && player.getHitboxRect().overlaps(bounds);
+        return player.getKeyCount() > 0 && player.getHitboxRect().overlaps(bounds);
     }
 
     /**

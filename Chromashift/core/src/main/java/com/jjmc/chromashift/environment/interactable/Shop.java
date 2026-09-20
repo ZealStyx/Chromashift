@@ -133,9 +133,11 @@ public class Shop implements Interactable {
         this.player = player;
     }
 
+    private final Rectangle boundsCache = new Rectangle();
     @Override
     public Rectangle getBounds() {
-        return new Rectangle(x, y, width, height);
+        boundsCache.set(x, y, width, height);
+        return boundsCache;
     }
 
     @Override
@@ -170,8 +172,6 @@ public class Shop implements Interactable {
 
         isOpen = true;
         
-        // Store current movement state and disable player movement
-        playerWasMovable = player.getCanJump(); // Using canJump as a proxy for movement enabled
         disablePlayerMovement();
 
         // Create shop dialog
@@ -255,19 +255,22 @@ public class Shop implements Interactable {
         Gdx.app.log("Shop", "Successfully purchased " + item.name);
     }
     
+    private boolean wasStunnedBeforeShop = false;
     private void disablePlayerMovement() {
-        // Save current velocity before stunning player
         if (player != null) {
             savedVelocityX = player.getVelocityX();
             savedVelocityY = player.getVelocityY();
+            wasStunnedBeforeShop = player.isStunned();
             player.setStunned(true);
         }
     }
     
     private void enablePlayerMovement() {
-        if (player != null && playerWasMovable) {
-            player.setStunned(false);
-            // Restore the saved velocity so player continues their movement
+        if (player != null) {
+            // Only unstun if we stunned them (not if they were already stunned)
+            if (!wasStunnedBeforeShop) {
+                player.setStunned(false);
+            }
             player.setVelocityX(savedVelocityX);
             player.setVelocityY(savedVelocityY);
         }

@@ -176,18 +176,16 @@ public class Button implements Interactable, Solid {
         anim.render(batch, bounds.x, bounds.y, BUTTON_WIDTH, BUTTON_HEIGHT);
     }
 
+    private static final Color COLLISION_DEBUG_COLOR = new Color(0f, 0.4f, 1f, 0.4f);
     @Override
     public void debugDraw(ShapeRenderer shape) {
-        // Draw overall button bounds
         shape.setColor(Color.WHITE);
         shape.rect(bounds.x, bounds.y, bounds.width, bounds.height);
 
-        // Draw solid platform and activation area
         shape.setColor(Color.DARK_GRAY);
         shape.rect(solidBounds.x, solidBounds.y, solidBounds.width, solidBounds.height);
 
-        // Draw collision-only bounds (semi-transparent blue) to help debugging
-        shape.setColor(new Color(0f, 0.4f, 1f, 0.4f));
+        shape.setColor(COLLISION_DEBUG_COLOR);
         shape.rect(collisionBounds.x, collisionBounds.y, collisionBounds.width, collisionBounds.height);
 
         shape.setColor(pressed ? Color.GREEN : Color.LIGHT_GRAY);

@@ -103,12 +103,20 @@ public class Projectile {
     
     /** Current center position. */
     public Vector2 getPosition() {
-        return new Vector2(x + width / 2f, y + height / 2f);
+        posCache.set(x + width / 2f, y + height / 2f);
+        return posCache;
     }
-    
     /** Current direction. */
     public Vector2 getDirection() {
-        return direction.cpy();
+        dirCache.set(direction);
+        return dirCache;
+    }
+    /** Copy for external use that needs new instance */
+    public Vector2 getPositionCopy() {
+        return new Vector2(x + width / 2f, y + height / 2f);
+    }
+    public Vector2 getDirectionCopy() {
+        return new Vector2(direction);
     }
     public void update(float delta, Array<Solid> solids, Array<Enemy> enemies) {
         if (!isActive) return;
@@ -125,42 +133,29 @@ public class Projectile {
             if (splitTimer >= splitDelay) {
                 // Time to split: flip flag and end this one
                 splitTriggered = true;
-                Gdx.app.log("Projectile", "SPLIT TRIGGERED: elapsed=" + splitTimer + ", delay=" + splitDelay + ", hasHit=" + hasHit);
+                // log removed
                 isActive = false;
                 return;
             }
         }
         
-        // Homing (split shots)
+        // Homing (split shots) - reuse temp vectors
         if (isHoming && enemies != null) {
-            // Pick a target when needed
             if (currentTarget == null || !currentTarget.isAlive()) {
                 currentTarget = findClosestEnemy(enemies);
             }
-            
-            // Turn toward target with rate limit
             if (currentTarget != null && currentTarget.isAlive()) {
-                Vector2 myPos = new Vector2(x + width / 2f, y + height / 2f);
+                tmpVec1.set(x + width / 2f, y + height / 2f);
                 Rectangle targetBounds = currentTarget.getBounds();
-                Vector2 targetPos = new Vector2(
-                    targetBounds.x + targetBounds.width / 2f,
-                    targetBounds.y + targetBounds.height / 2f
-                );
-                
-                Vector2 desiredDir = targetPos.sub(myPos).nor();
+                tmpVec2.set(targetBounds.x + targetBounds.width / 2f, targetBounds.y + targetBounds.height / 2f);
+                tmpVec2.sub(tmpVec1).nor();
                 float currentAngle = direction.angleDeg();
-                float desiredAngle = desiredDir.angleDeg();
-                
-                // Shortest angle delta
+                float desiredAngle = tmpVec2.angleDeg();
                 float angleDiff = desiredAngle - currentAngle;
                 while (angleDiff > 180f) angleDiff -= 360f;
                 while (angleDiff < -180f) angleDiff += 360f;
-                
-                // Clamp by turn rate
                 float maxTurnThisFrame = maxTurnRatePerSecond * delta;
                 float turnAmount = Math.max(-maxTurnThisFrame, Math.min(maxTurnThisFrame, angleDiff));
-                
-                // Apply turn and update rotation
                 float newAngle = currentAngle + turnAmount;
                 direction.set(1f, 0f).rotateDeg(newAngle).nor();
                 rotationDeg = newAngle;
@@ -176,16 +171,14 @@ public class Projectile {
             baseX += moveX;
             baseY += moveY;
 
-            // Perp to travel dir
-            Vector2 perp = new Vector2(-direction.y, direction.x).nor();
+            tmpPerp.set(-direction.y, direction.x).nor();
 
             // Sine offset perpendicular to path
             sineTime += delta;
             float sineOffset = (float) Math.sin(sineTime * sineFrequency * 2f * Math.PI) * sineAmplitude;
 
-            // Base + perp wobble
-            x = baseX + perp.x * sineOffset;
-            y = baseY + perp.y * sineOffset;
+            x = baseX + tmpPerp.x * sineOffset;
+            y = baseY + tmpPerp.y * sineOffset;
         } else {
             // No wobble: straight move
             x += moveX;
@@ -203,7 +196,7 @@ public class Projectile {
             Rectangle solidBounds = solid.getBounds();
             if (solidBounds != null && solidBounds.overlaps(projBounds)) {
                 if (isMainProjectile) {
-                    Gdx.app.log("Projectile", "COLLISION with solid: hasHit=true, splitTriggered=" + splitTriggered);
+                    // log removed
                 }
                 isActive = false;
                 hasHit = true;
@@ -225,7 +218,7 @@ public class Projectile {
                         enemy.takeDamage((int) damage);
                     }
                     if (isMainProjectile) {
-                        Gdx.app.log("Projectile", "COLLISION with enemy: hasHit=true, splitTriggered=" + splitTriggered);
+                        // log removed
                     }
                     isActive = false;
                     hasHit = true;
@@ -239,27 +232,19 @@ public class Projectile {
     /** Closest living enemy. */
     private Enemy findClosestEnemy(Array<Enemy> enemies) {
         if (enemies == null || enemies.size == 0) return null;
-        
         Enemy closest = null;
         float closestDist = Float.MAX_VALUE;
-        Vector2 myPos = new Vector2(x + width / 2f, y + height / 2f);
-        
+        tmpVec1.set(x + width / 2f, y + height / 2f);
         for (Enemy enemy : enemies) {
             if (!enemy.isAlive()) continue;
-            
             Rectangle bounds = enemy.getBounds();
-            Vector2 enemyPos = new Vector2(
-                bounds.x + bounds.width / 2f,
-                bounds.y + bounds.height / 2f
-            );
-            
-            float dist = myPos.dst(enemyPos);
+            tmpVec2.set(bounds.x + bounds.width / 2f, bounds.y + bounds.height / 2f);
+            float dist = tmpVec1.dst(tmpVec2);
             if (dist < closestDist) {
                 closestDist = dist;
                 closest = enemy;
             }
         }
-        
         return closest;
     }
     
@@ -271,8 +256,12 @@ public class Projectile {
         batch.draw(region, x, y, width / 2f, height / 2f, width, height, 1f, 1f, rotationDeg);
     }
     
+    private final Rectangle boundsCache = new Rectangle();
+    private final Vector2 posCache = new Vector2();
+    private final Vector2 dirCache = new Vector2();
     public Rectangle getBounds() {
-        return new Rectangle(x, y, width, height);
+        boundsCache.set(x, y, width, height);
+        return boundsCache;
     }
     
     public boolean isActive() {

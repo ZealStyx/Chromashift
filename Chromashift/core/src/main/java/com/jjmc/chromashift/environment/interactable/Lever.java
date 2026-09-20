@@ -84,23 +84,23 @@ public class Lever implements Interactable {
         return playerNearby;
     }
 
+    private String currentAnimName = null;
     @Override
     public void render(SpriteBatch batch) {
         if (anim != null) {
-            // Sprite is 64x64. Draw it so the collision rect (bounds) sits centered inside the sprite.
             final float SPRITE_W = 64f;
             final float SPRITE_H = 64f;
             float drawX = bounds.x - (SPRITE_W - bounds.width) * 0.5f;
             float drawY = bounds.y - (SPRITE_H - bounds.height) * 0.5f;
-            // Ensure the correct animation row is selected (orientation may have been set earlier)
-            anim.play(horizontal ? "HORIZONTAL" : "VERTICAL", false);
-            // Use column/frame 0 or 1 depending on whether the lever is on
+            String targetAnim = horizontal ? "HORIZONTAL" : "VERTICAL";
+            if (!targetAnim.equals(currentAnimName)) {
+                anim.play(targetAnim, false);
+                currentAnimName = targetAnim;
+            }
             anim.setFrame(on ? 1 : 0);
             anim.render(batch, drawX, drawY, SPRITE_W, SPRITE_H);
             return;
         }
-        // fallback: draw simple rect
-        // (we don't have batch.draw of plain color here; keep as no-op)
     }
 
     @Override

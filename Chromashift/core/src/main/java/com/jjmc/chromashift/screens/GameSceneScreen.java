@@ -576,7 +576,7 @@ public class GameSceneScreen implements Screen {
             // Dim background region
             shape.setProjectionMatrix(camController.getCamera().combined);
             shape.begin(ShapeRenderer.ShapeType.Filled);
-            shape.setColor(new Color(0f, 0f, 0f, 0.65f));
+            shape.setColor(0f, 0f, 0f, 0.65f);
             float vw = camController.getCamera().viewportWidth * camController.getCamera().zoom;
             float vh = camController.getCamera().viewportHeight * camController.getCamera().zoom;
             float vx = camController.getCamera().position.x - vw / 2f;
@@ -659,7 +659,7 @@ public class GameSceneScreen implements Screen {
                 } catch (Exception e) {
                     // Player doesn't exist, create it
                     try {
-                        System.out.println("[DEBUG] Creating default player record");
+                        // debug removed
 
                         com.jjmc.chromashift.database.PlayerDAO.createPlayer("DefaultPlayer", currentLevelPath);
                     } catch (Exception ex2) {
@@ -671,11 +671,10 @@ public class GameSceneScreen implements Screen {
                 com.jjmc.chromashift.player.PlayerIO.PlayerState state = com.jjmc.chromashift.player.PlayerIO
                         .capture(player, currentLevelPath, visitedLevels);
                 try {
-                    System.out.println("[DEBUG] Attempting to save player state for ID: 1");
-                    System.out.println(
-                            "[DEBUG] Player state: x=" + state.x + ", y=" + state.y + ", diamonds=" + state.diamonds);
+                    // debug removed
+                    // debug removed
                     com.jjmc.chromashift.database.PlayerDAO.savePlayerState(1, state);
-                    System.out.println("[DEBUG] Save completed successfully");
+                    // debug removed
                     Gdx.app.log("TestSceneScreen", "✓ Player save saved to database");
                 } catch (Exception ex) {
                     System.err.println("[ERROR] Failed to save player state: " + ex.getMessage());
@@ -696,7 +695,7 @@ public class GameSceneScreen implements Screen {
             }
             if (Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
                 try {
-                    System.out.println("[DEBUG] Attempting to load player state for ID: 1");
+                    // debug removed
                     com.jjmc.chromashift.database.PlayerDAO.loadPlayerStateFromDB(1, player);
 
                     // Also restore visited levels
@@ -705,10 +704,10 @@ public class GameSceneScreen implements Screen {
                     if (loadedVisited != null && loadedVisited.size > 0) {
                         visitedLevels.clear();
                         visitedLevels.addAll(loadedVisited);
-                        System.out.println("[DEBUG] Restored " + visitedLevels.size + " visited levels");
+                        // debug removed
                     }
 
-                    System.out.println("[DEBUG] Load completed successfully");
+                    // debug removed
                     Gdx.app.log("TestSceneScreen",
                             "✓ Player loaded from database with " + visitedLevels.size + " visited levels");
                 } catch (Exception ex) {
@@ -942,19 +941,17 @@ public class GameSceneScreen implements Screen {
         Gdx.gl.glClearColor(0.08f, 0.09f, 0.12f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        shape.setProjectionMatrix(camController.getCamera().combined);
-        // Draw Tentacles (behind everything or in front? Let's draw behind player but
-        // in
-        // front of walls)
-        // Actually, ShapeRenderer needs begin/end.
-        // The existing code ends 'shape' before batch.begin().
-        // We can draw tentacles here.
-        for (com.jjmc.chromashift.environment.enemy.Tentacle t : tentacles) {
-            if (t.isAlive()) {
-                t.draw(shape);
+        // Draw Tentacles using ShapeRenderer (each tentacle manages its own begin/end)
+        // Set projection once before drawing
+        if (shape != null) {
+            shape.setProjectionMatrix(camController.getCamera().combined);
+            for (com.jjmc.chromashift.environment.enemy.Tentacle t : tentacles) {
+                if (t.isAlive()) {
+                    t.draw(shape);
+                }
             }
+            // No outer begin/end — Tentacle.draw() handles it internally
         }
-        shape.end();
 
         batch.setProjectionMatrix(camController.getCamera().combined);
         batch.begin();
@@ -1102,8 +1099,7 @@ public class GameSceneScreen implements Screen {
                 if (!t.isAlive())
                     continue;
 
-                // Draw segment hitboxes (cyan circles)
-                shape.setColor(new Color(0f, 1f, 1f, 0.5f));
+                shape.setColor(0f, 1f, 1f, 0.5f);
                 com.badlogic.gdx.math.Circle[] hitboxes = t.getSegmentHitboxes();
                 if (hitboxes != null) {
                     for (com.badlogic.gdx.math.Circle c : hitboxes) {
@@ -1118,12 +1114,10 @@ public class GameSceneScreen implements Screen {
                     com.badlogic.gdx.math.Vector2 center = t.getCurlCenter();
                     float radius = t.getCurlRadius();
 
-                    // Draw curl circle
-                    shape.setColor(new Color(1f, 1f, 0f, 0.6f));
+                    shape.setColor(1f, 1f, 0f, 0.6f);
                     shape.circle(center.x, center.y, radius, 32);
 
-                    // Draw center crosshair
-                    shape.setColor(new Color(1f, 0f, 0f, 0.8f));
+                    shape.setColor(1f, 0f, 0f, 0.8f);
                     float crossSize = 10f;
                     shape.line(center.x - crossSize, center.y, center.x + crossSize, center.y);
                     shape.line(center.x, center.y - crossSize, center.x, center.y + crossSize);
@@ -1144,7 +1138,7 @@ public class GameSceneScreen implements Screen {
             }
 
             // Draw respawn areas for boxes and orbs
-            shape.setColor(new Color(0f, 0.5f, 1f, 0.25f));
+            shape.setColor(0f, 0.5f, 1f, 0.25f);
             for (Interactable i : interactables) {
                 if (i instanceof com.jjmc.chromashift.environment.interactable.Box b) {
                     Rectangle area = b.getRespawnArea();
@@ -1225,7 +1219,7 @@ public class GameSceneScreen implements Screen {
         shape.setProjectionMatrix(uiCam.combined);
         shape.begin(ShapeRenderer.ShapeType.Filled);
         // Background boxes (dark)
-        shape.setColor(new Color(0f, 0f, 0f, 0.55f));
+        shape.setColor(0f, 0f, 0f, 0.55f);
                                         for (int di = 0; di < count; di++) {
                                             int x = xStart + di * (HUD_BAR_WIDTH + HUD_BAR_GAP);
             shape.rect(x - 2, y - 2, HUD_BAR_WIDTH + 4, HUD_BAR_HEIGHT + 4);
@@ -1238,11 +1232,11 @@ public class GameSceneScreen implements Screen {
             float pct = (hpMax <= 0f) ? 0f : Math.max(0f, Math.min(1f, hp / hpMax));
                                             int x = xStart + di * (HUD_BAR_WIDTH + HUD_BAR_GAP);
             // Empty bar (gray)
-            shape.setColor(new Color(0.25f, 0.25f, 0.25f, 0.9f));
+            shape.setColor(0.25f, 0.25f, 0.25f, 0.9f);
             shape.rect(x, y, HUD_BAR_WIDTH, HUD_BAR_HEIGHT);
             // Filled (red -> orange if low)
-            Color fill = pct > 0.33f ? new Color(0.8f, 0.15f, 0.15f, 1f)
-                    : new Color(0.95f, 0.5f, 0.1f, 1f);
+            if (pct > 0.33f) shape.setColor(0.8f, 0.15f, 0.15f, 1f);
+            else shape.setColor(0.95f, 0.5f, 0.1f, 1f);
             shape.setColor(fill);
             shape.rect(x, y, (int) (HUD_BAR_WIDTH * pct), HUD_BAR_HEIGHT);
         }
@@ -1374,6 +1368,9 @@ public class GameSceneScreen implements Screen {
                 (uiStage.getHeight() - settingsDialog.getHeight()) / 2f);
     }
 
+    private static final Rectangle beamRectCache = new Rectangle();
+    private static final com.badlogic.gdx.math.Vector2 beamA = new com.badlogic.gdx.math.Vector2();
+    private static final com.badlogic.gdx.math.Vector2 beamB = new com.badlogic.gdx.math.Vector2();
     private void addVolumeRow(com.badlogic.gdx.scenes.scene2d.ui.Table parent, String title, float initial01,
             java.util.function.Consumer<Float> setter) {
         com.chromashift.helper.SpriteLabel titleLbl = com.chromashift.helper.UIHelper.createSpriteLabel(title,
@@ -1408,28 +1405,26 @@ public class GameSceneScreen implements Screen {
         if (points == null || points.size() < 2 || r == null)
             return false;
         float pad = thickness * 0.5f;
-        Rectangle re = new Rectangle(r.x - pad, r.y - pad, r.width + pad * 2f, r.height + pad * 2f);
+        beamRectCache.set(r.x - pad, r.y - pad, r.width + pad * 2f, r.height + pad * 2f);
 
-        // helper: check segment intersects rectangle `re`
         for (int i = 0; i < points.size() - 1; i++) {
             com.badlogic.gdx.math.Vector2 a = points.get(i);
             com.badlogic.gdx.math.Vector2 b = points.get(i + 1);
-            // if either endpoint inside rect -> hit
-            if (re.contains(a.x, a.y) || re.contains(b.x, b.y))
+            if (beamRectCache.contains(a.x, a.y) || beamRectCache.contains(b.x, b.y))
                 return true;
-            // check intersection with each rectangle edge
-            com.badlogic.gdx.math.Vector2 r1 = new com.badlogic.gdx.math.Vector2(re.x, re.y);
-            com.badlogic.gdx.math.Vector2 r2 = new com.badlogic.gdx.math.Vector2(re.x + re.width, re.y);
-            com.badlogic.gdx.math.Vector2 r3 = new com.badlogic.gdx.math.Vector2(re.x + re.width, re.y + re.height);
-            com.badlogic.gdx.math.Vector2 r4 = new com.badlogic.gdx.math.Vector2(re.x, re.y + re.height);
-            if (segmentsIntersect(a, b, r1, r2))
-                return true;
-            if (segmentsIntersect(a, b, r2, r3))
-                return true;
-            if (segmentsIntersect(a, b, r3, r4))
-                return true;
-            if (segmentsIntersect(a, b, r4, r1))
-                return true;
+            // Reuse vectors for rect edges
+            beamA.set(beamRectCache.x, beamRectCache.y);
+            beamB.set(beamRectCache.x + beamRectCache.width, beamRectCache.y);
+            if (segmentsIntersect(a, b, beamA, beamB)) return true;
+            beamA.set(beamRectCache.x + beamRectCache.width, beamRectCache.y);
+            beamB.set(beamRectCache.x + beamRectCache.width, beamRectCache.y + beamRectCache.height);
+            if (segmentsIntersect(a, b, beamA, beamB)) return true;
+            beamA.set(beamRectCache.x + beamRectCache.width, beamRectCache.y + beamRectCache.height);
+            beamB.set(beamRectCache.x, beamRectCache.y + beamRectCache.height);
+            if (segmentsIntersect(a, b, beamA, beamB)) return true;
+            beamA.set(beamRectCache.x, beamRectCache.y + beamRectCache.height);
+            beamB.set(beamRectCache.x, beamRectCache.y);
+            if (segmentsIntersect(a, b, beamA, beamB)) return true;
         }
         return false;
     }
@@ -1546,8 +1541,8 @@ public class GameSceneScreen implements Screen {
 
     /**
      * Returns the next level path based on current level.
-     * Progression order: level1 -> level2 -> level3 -> level4 -> level5
-     * -> level6 -> bossroom
+     * Progression order: tutorial -> level1 -> level2 -> level3 -> level4 -> level5
+     * -> level6 -> bossroom -> bossroom1 -> menu
      */
     private String getNextLevelPath(String current) {
         if (current == null)
@@ -1556,17 +1551,16 @@ public class GameSceneScreen implements Screen {
         // Normalize path for comparison
         String normalized = current.toLowerCase().replace("\\", "/");
 
-        if (normalized.contains("level1")) return "levels/level2.json";
+        if (normalized.contains("tutorial")) return "levels/level1.json";
         if (normalized.contains("level1")) return "levels/level2.json";
         if (normalized.contains("level2")) return "levels/level3.json";
-        if (normalized.contains("level3")) return "levels/bossroom.json";
-        if (normalized.contains("bossroom")) return null;
-        else return null;
-        // if (normalized.contains("level4")) return "levels/level5.json";
-        // if (normalized.contains("level5")) return "levels/level6.json";
-        // if (normalized.contains("level6")) return "levels/bossroom.json";
-        // if (normalized.contains("bossroom")) return null; // final stage
-        // else return null; // unknown level
+        if (normalized.contains("level3")) return "levels/level4.json";
+        if (normalized.contains("level4")) return "levels/level5.json";
+        if (normalized.contains("level5")) return "levels/level6.json";
+        if (normalized.contains("level6")) return "levels/bossroom.json";
+        if (normalized.contains("bossroom1")) return null;
+        if (normalized.contains("bossroom")) return "levels/bossroom1.json";
+        return null;
     }
     
     /**
@@ -1644,36 +1638,34 @@ public class GameSceneScreen implements Screen {
 
     @Override
     public void dispose() {
-        // Autosave on application/window close
         try {
             saveAllState(currentLevelPath);
         } catch (Throwable t) {
             Gdx.app.log("TestSceneScreen", "Autosave on dispose failed: " + t.getMessage());
         }
-        if (ctx != null)
-            ctx.dispose();
-        player.dispose();
-        if (boss != null)
-            boss.disposeParts();
-        if (bossGuardian != null)
-            bossGuardian.dispose();
-        if (backgroundAnimator != null) {
-            backgroundAnimator.dispose();
+        if (ctx != null) ctx.dispose();
+        if (player != null) player.dispose();
+        if (boss != null) boss.disposeParts();
+        if (bossGuardian != null) bossGuardian.dispose();
+        if (backgroundAnimator != null) backgroundAnimator.dispose();
+        for (Interactable i : interactables) {
+            if (i instanceof Button b) b.dispose();
+            if (i instanceof com.jjmc.chromashift.environment.interactable.LockedDoor ld) ld.dispose();
+            if (i instanceof com.jjmc.chromashift.environment.interactable.Target t) t.dispose();
         }
-        // dispose button sprites
-        for (Interactable i : interactables)
-            if (i instanceof Button b)
-                b.dispose();
-        // dispose collectibles
-        for (com.jjmc.chromashift.environment.collectible.Collectible c : collectibles)
-            c.dispose();
-        // dispose shops
-        for (com.jjmc.chromashift.environment.interactable.Shop s : shops)
-            s.dispose();
-        // dispose UI stage
-        if (uiStage != null)
-            uiStage.dispose();
-        // dispose wall/shared textures
-        com.jjmc.chromashift.environment.Wall.dispose();
+        for (com.jjmc.chromashift.environment.collectible.Collectible c : collectibles) c.dispose();
+        for (com.jjmc.chromashift.environment.interactable.Shop s : shops) s.dispose();
+        if (uiStage != null) uiStage.dispose();
+        // Dispose all static shared textures/pixels
+        try { com.jjmc.chromashift.environment.Wall.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Door.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Box.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Glass.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Mirror.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Laser.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.LaserRay.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.interactable.Orb.disposeStatic(); } catch (Exception ignored) {}
+        try { com.jjmc.chromashift.environment.collectible.HealthPotion.disposeStatic(); } catch (Exception ignored) {}
+        try { com.chromashift.helper.SoundManager.dispose(); } catch (Exception ignored) {}
     }
 }

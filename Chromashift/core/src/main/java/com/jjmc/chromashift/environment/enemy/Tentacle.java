@@ -98,7 +98,7 @@ public class Tentacle implements Enemy {
         this.segments = Math.max(10, Math.min(50, segmentCount)); // Clamp between 10-50
         anchor = new Vector2(x, y);
         // Generate stable unique ID based on position
-        this.uniqueId = "Tentacle_" + ((int)x) + "_" + ((int)y) + "_" + System.nanoTime();
+        this.uniqueId = String.format("Tentacle_%.0f_%.0f_%d", x, y, (int)(x*31 + y*17) % 10000);
 
         pos = new Vector2[segments];
         vel = new Vector2[segments];
@@ -150,7 +150,7 @@ public class Tentacle implements Enemy {
         // visibility based sleep
         boolean visible = VisibilityCuller.isVisible(getBounds(), 96f);
         if (!visible) sleeping = true; else sleeping = false;
-        if (sleeping) { time += delta; PerformanceProfiler.stop("tentacle_update"); return; }
+        if (sleeping) { time += delta; prevMouse.set(targetX, targetY); PerformanceProfiler.stop("tentacle_update"); return; }
         time += delta;
 
         // Set target to provided coordinates (Player position)
@@ -686,17 +686,17 @@ public class Tentacle implements Enemy {
     public int getMaxHits() { return maxHits; }
 
     private void die() {
+        if (dead) return;
         releasePlayer();
         dead = true;
-        // Spawn diamond drops (3–5) around the TIP (visual reward where fight ended)
         if (dropTarget != null) {
-            int count = 3 + (int)(Math.random() * 3); // 3,4,5
+            int count = 3 + com.badlogic.gdx.math.MathUtils.random(0,2);
             float tipX = pos[segments - 1].x;
             float tipY = pos[segments - 1].y;
-            float spread = 28f; // radius of scatter
+            float spread = 28f;
             for (int i = 0; i < count; i++) {
-                float ox = tipX + (float)(Math.random() * spread - spread/2f);
-                float oy = tipY + (float)(Math.random() * spread - spread/2f);
+                float ox = tipX + com.badlogic.gdx.math.MathUtils.random(-spread/2f, spread/2f);
+                float oy = tipY + com.badlogic.gdx.math.MathUtils.random(-spread/2f, spread/2f);
                 dropTarget.add(new com.jjmc.chromashift.environment.collectible.Diamond(ox, oy));
             }
         }
@@ -714,6 +714,7 @@ public class Tentacle implements Enemy {
      * @return Unique ID string
      */
     public String getUniqueId() { return uniqueId; }
+    public void setUniqueId(String id) { if (id != null && !id.isEmpty()) this.uniqueId = id; }
 
     /** Convenience: tip X */
     public float getTipX() { return pos[segments - 1].x; }

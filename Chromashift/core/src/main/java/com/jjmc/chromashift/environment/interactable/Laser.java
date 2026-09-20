@@ -49,13 +49,15 @@ public class Laser implements Interactable {
         this.solids = solids;
     }
 
+    private float gameTime = 0f;
     @Override
     public void update(float delta) {
+        gameTime += delta;
         // Update ray position to center of bounds
         ray.position.set(bounds.x + bounds.width / 2f, bounds.y + bounds.height / 2f);
         ray.setRotation(rotation);
-        // Cast ray and cache points
-        cachedPoints = ray.cast(mirrors, glasses, solids, System.currentTimeMillis() / 1000f);
+        // Cast ray and cache points - use game time instead of system time for determinism
+        cachedPoints = ray.cast(mirrors, glasses, solids, gameTime);
     }
 
     @Override
@@ -131,6 +133,12 @@ public class Laser implements Interactable {
             pm.fill();
             PIXEL = new com.badlogic.gdx.graphics.Texture(pm);
             pm.dispose();
+        }
+    }
+    public static void disposeStatic() {
+        if (PIXEL != null) {
+            try { PIXEL.dispose(); } catch (Exception ignored) {}
+            PIXEL = null;
         }
     }
 

@@ -411,7 +411,7 @@ public class Boss extends Entity {
                         float localSum = 0f;
                         for (float v : work) localSum += v;
                         if (localSum <= 0f) break; // nothing left
-                        double r = Math.random() * localSum;
+                        double r = com.badlogic.gdx.math.MathUtils.random() * localSum;
                         int pick = -1;
                         float acc = 0f;
                         for (int i = 0; i < n; i++) {

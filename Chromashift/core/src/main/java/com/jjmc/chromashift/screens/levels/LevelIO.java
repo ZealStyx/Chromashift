@@ -193,19 +193,21 @@ public class LevelIO {
                     ensureArraysInitialized(s);
                     // Deduplicate objects in case JSON has duplicates
                     deduplicateObjects(s);
-                    // Copy the internal asset into the project's `assets/` folder so editors
-                    // and source control can pick up the canonical file. Overwrite if present.
+                    // Copy internal asset to workspace only if workspace file doesn't exist
+                    // Previously overwrote workspace edits - fixed to preserve workspace changes
                     try {
                         java.io.File assetsDir = findProjectAssetsDir();
                         if (assetsDir != null) {
                             java.io.File out = new java.io.File(assetsDir,
                                     path.replace('/', java.io.File.separatorChar));
-                            java.io.File parent = out.getParentFile();
-                            if (parent != null && !parent.exists())
-                                parent.mkdirs();
-                            Gdx.files.absolute(out.getAbsolutePath()).writeString(text, false);
-                            Gdx.app.log("LevelIO",
-                                    "Copied internal level to workspace assets: " + out.getAbsolutePath());
+                            if (!out.exists()) {
+                                java.io.File parent = out.getParentFile();
+                                if (parent != null && !parent.exists())
+                                    parent.mkdirs();
+                                Gdx.files.absolute(out.getAbsolutePath()).writeString(text, false);
+                                Gdx.app.log("LevelIO",
+                                        "Copied internal level to workspace assets: " + out.getAbsolutePath());
+                            }
                         }
                     } catch (Exception ex) {
                         Gdx.app.error("LevelIO",
@@ -790,7 +792,7 @@ public class LevelIO {
      * Compare floats with epsilon tolerance
      */
     private static boolean floatEquals(float a, float b) {
-        return Math.abs(a - b) < 0.001f;
+        return Math.abs(a - b) < 0.5f; // 0.5px tolerance for editor snapping
     }
     
     /**

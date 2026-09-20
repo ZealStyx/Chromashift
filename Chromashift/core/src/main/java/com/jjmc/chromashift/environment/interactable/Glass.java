@@ -157,42 +157,6 @@ public class Glass implements Interactable {
         // Static object - no update needed
     }
     
+    private float gameTime = 0f;
     @Override
-    public void render(SpriteBatch batch) {
-        ensurePixel();
-        Color displayColor = rainbow ? getTintAt(start, System.currentTimeMillis() / 1000f) : this.color;
-        Color prev = batch.getColor();
-        float pr = prev.r, pg = prev.g, pb = prev.b, pa = prev.a;
-        try {
-            // Flush pending draws to avoid color state leaking into previously batched geometry
-            batch.flush();
-            batch.setColor(displayColor.r, displayColor.g, displayColor.b, 0.65f);
-            batch.draw(PIXEL, bounds.x, bounds.y, bounds.width, bounds.height);
-            batch.flush();
-        } finally {
-            // Restore explicitly to avoid aliasing with the internal Color instance
-            batch.setColor(pr, pg, pb, pa);
-        }
-    }
     
-    @Override
-    public void debugDraw(ShapeRenderer sr) {
-        // Base bounds background
-        sr.setColor(0.2f, 0.2f, 0.2f, 0.5f);
-        sr.rect(bounds.x, bounds.y, bounds.width, bounds.height);
-        // Tinted fill to represent the glass (no sprite)
-        Color displayColor = rainbow ? getTintAt(start, System.currentTimeMillis() / 1000f) : this.color;
-        sr.setColor(displayColor.r, displayColor.g, displayColor.b, 0.45f);
-        sr.rect(bounds.x, bounds.y, bounds.width, bounds.height);
-    }
-    
-    @Override
-    public void interact() {
-        // Glass doesn't interact
-    }
-    
-    @Override
-    public boolean canInteract() {
-        return false;
-    }
-}

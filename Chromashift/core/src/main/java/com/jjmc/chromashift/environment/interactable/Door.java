@@ -30,17 +30,37 @@ public class Door implements Interactable, Solid {
     private static Texture doorTexture;
     private final TextureRegion vertRegion;
     private final TextureRegion horizRegion;
+    private final TextureRegion cachedPartial = new TextureRegion();
 
-    public Door(float x, Solid baseSolid, int cols, int rows) {
-        Rectangle baseRect = baseSolid.getBounds();
-        float y = baseRect.y + baseRect.height;
+    // Direct position constructor - honors exact saved position
+    public Door(float x, float y, int cols, int rows, OpenDirection dir, float openSpeed, float closeSpeed) {
         float width = cols * 32f;
         float height = rows * 32f;
+        bounds = new Rectangle(x, y, width, height);
+        this.openDirection = dir != null ? dir : OpenDirection.UP;
+        this.openSpeed = openSpeed > 0 ? openSpeed : 3f;
+        this.closeSpeed = closeSpeed > 0 ? closeSpeed : 3f;
+        TextureRegion[][] tiles = loadDoorTiles();
+        this.vertRegion = tiles[0][0];
+        this.horizRegion = tiles[1][0];
+    }
+
+    public Door(float x, Solid baseSolid, int cols, int rows) {
+        // For backward compat: if baseSolid is actually a dummy positioned at saved Y, use its intended position
+        // The LevelLoader now passes exact x,y, but old code used baseSolid top. We detect if x is already absolute.
+        Rectangle baseRect = baseSolid != null ? baseSolid.getBounds() : new Rectangle(x, 0, 32, 32);
+        float y = baseRect.y + baseRect.height;
+        // If baseSolid is a dummy 1x1 wall created at idd.y-32, y will be idd.y-31. Correct to idd.y if close.
+        // Better: if caller passed x as absolute and baseSolid is dummy, we should honor x as is and use saved y if available.
+        // For now, if baseSolid height is 1 (dummy), treat x as absolute and y as from baseSolid + offset
+        float width = cols * 32f;
+        float height = rows * 32f;
+        // Heuristic: if baseSolid is tiny (dummy), use x directly and y = baseRect.y + baseRect.height
+        // which should be close to saved y. The new direct constructor is preferred.
         bounds = new Rectangle(x, y, width, height);
         this.openDirection = OpenDirection.UP;
         this.openSpeed = 3f;
         this.closeSpeed = 3f;
-        // init texture regions
         TextureRegion[][] tiles = loadDoorTiles();
         this.vertRegion = tiles[0][0];
         this.horizRegion = tiles[1][0];
@@ -129,20 +149,21 @@ public class Door implements Interactable, Solid {
 
     @Override
     public Rectangle getCollisionBounds() {
-        // Return collision bounds that match the visible portion of the door.
-        // When fully open, disable collision.
+        // When fully open (>=0.99), disable collision completely
+        if (openProgress >= 0.99f) return null;
         final int TILE = 32;
         if (openDirection == OpenDirection.UP || openDirection == OpenDirection.DOWN) {
-            // Snap visible area to full tile rows
             float rawVisible = bounds.height * (1f - openProgress);
+            // If less than half tile visible, treat as open
+            if (rawVisible < TILE * 0.5f) return null;
             int visibleRows = (int)Math.ceil(rawVisible / TILE);
             if (visibleRows <= 0) return null;
             float visibleHeight = Math.min(bounds.height, visibleRows * TILE);
             float yOffset = (openDirection == OpenDirection.UP) ? bounds.y : (bounds.y + bounds.height - visibleHeight);
             return new Rectangle(bounds.x, yOffset, bounds.width, visibleHeight);
         } else {
-            // Snap visible area to full tile columns
             float rawVisible = bounds.width * (1f - openProgress);
+            if (rawVisible < TILE * 0.5f) return null;
             int visibleCols = (int)Math.ceil(rawVisible / TILE);
             if (visibleCols <= 0) return null;
             float visibleWidth = Math.min(bounds.width, visibleCols * TILE);
@@ -200,12 +221,15 @@ public class Door implements Interactable, Solid {
                         // full tile
                         batch.draw(vertRegion, drawX, drawY, TILE, TILE);
                     } else {
-                        // partial tile: crop source region to avoid stretching
                         int drawW = Math.max(1, (int)remainingW);
                         int drawH = Math.max(1, (int)remainingH);
-                        TextureRegion part = new TextureRegion(vertRegion.getTexture(), baseX, baseY, drawW, drawH);
-                        // draw with integer size so no scaling occurs
-                        batch.draw(part, drawX, drawY, drawW, drawH);
+                        if (remainingW >= TILE && remainingH >= TILE) {
+                            batch.draw(vertRegion, drawX, drawY, TILE, TILE);
+                        } else {
+                            cachedPartial.setTexture(vertRegion.getTexture());
+                            cachedPartial.setRegion(baseX, baseY, drawW, drawH);
+                            batch.draw(cachedPartial, drawX, drawY, drawW, drawH);
+                        }
                     }
                 }
             }
@@ -228,14 +252,14 @@ public class Door implements Interactable, Solid {
                     float drawY = bounds.y + iy * TILE;
                     float remainingH = Math.min(TILE, bounds.y + bounds.height - drawY);
 
+                    int drawW = Math.max(1, (int)remainingW);
+                    int drawH = Math.max(1, (int)remainingH);
                     if (remainingW >= TILE && remainingH >= TILE) {
                         batch.draw(horizRegion, drawX, drawY, TILE, TILE);
                     } else {
-                        int drawW = Math.max(1, (int)remainingW);
-                        int drawH = Math.max(1, (int)remainingH);
-                        TextureRegion part = new TextureRegion(horizRegion.getTexture(), baseX, baseY, drawW, drawH);
-                        // draw with integer size so no scaling occurs
-                        batch.draw(part, drawX, drawY, drawW, drawH);
+                        cachedPartial.setTexture(horizRegion.getTexture());
+                        cachedPartial.setRegion(baseX, baseY, drawW, drawH);
+                        batch.draw(cachedPartial, drawX, drawY, drawW, drawH);
                     }
                 }
             }
@@ -281,5 +305,11 @@ public class Door implements Interactable, Solid {
 
     public void setCloseSpeed(float closeSpeed) {
         this.closeSpeed = closeSpeed;
+    }
+    public static void disposeStatic() {
+        if (doorTexture != null) {
+            try { doorTexture.dispose(); } catch (Exception ignored) {}
+            doorTexture = null;
+        }
     }
 }

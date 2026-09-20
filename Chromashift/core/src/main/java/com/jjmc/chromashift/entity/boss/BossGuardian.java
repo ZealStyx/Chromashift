@@ -65,9 +65,9 @@ public class BossGuardian extends Boss {
             this.paddingLeft = padLeft;
             this.paddingRight = padRight;
             this.paddingBottom = padBottom;
-            this.bobPhase = (float)(Math.random() * Math.PI * 2);
-            this.bobSpeed = 1.2f + (float)Math.random() * 0.8f;
-            this.bobAmplitude = 10f + (float)Math.random() * 10f;
+            this.bobPhase = com.badlogic.gdx.math.MathUtils.random(0f, com.badlogic.gdx.math.MathUtils.PI2);
+            this.bobSpeed = 1.2f + com.badlogic.gdx.math.MathUtils.random(0f, 0.8f);
+            this.bobAmplitude = 10f + com.badlogic.gdx.math.MathUtils.random(0f, 10f);
             this.flipX = false;
             this.attacking = false;
             
@@ -190,7 +190,7 @@ public class BossGuardian extends Boss {
     private float targetY = 0f;
 
     // Debug flag for overall display
-    private boolean debugDisplay = true; // Set to true to show all debug info
+    private boolean debugDisplay = false; // disabled by default for release // Set to true to show all debug info
 
     // Guardian 1 pre-attack movement/attack state (mirrors Guardian 2 pattern)
     private enum Guardian1AttackState { FORMATION, MOVING_TO_ATTACK, SUMMONING, COOLDOWN }
@@ -1229,39 +1229,17 @@ public class BossGuardian extends Boss {
                     float scaledHitboxWidth = LIGHTNING_HITBOX_WIDTH * lightningScale;
                     float scaledHitboxHeight = LIGHTNING_HITBOX_HEIGHT * lightningScale;
                     
-                    Gdx.app.log("LightningDMG", "Checking frame " + currentFrame + ", damage=" + damageValue + 
-                        ", playerHealth=" + player.getHealthSystem().getCurrentHealth() + 
-                        ", playerBounds=" + playerBounds);
-                    
                     for (Vector2 boltPos : randomLightningPositions) {
-                        // Calculate the actual hitbox (use the content width without sprite padding)
-                        // The 48x361 hitbox is the ACTUAL damage area within the sprite
                         float hitboxLeft = boltPos.x - (scaledHitboxWidth / 2);
-                        float hitboxTop = boltPos.y - scaledHitboxHeight;  // Top of the hitbox (sprite goes from top to pos.y)
-                        
+                        float hitboxTop = boltPos.y - scaledHitboxHeight;
                         Rectangle lightningHitbox = new Rectangle(hitboxLeft, hitboxTop, scaledHitboxWidth, scaledHitboxHeight);
-                        
-                        Gdx.app.log("LightningDMG", "  Bolt at " + boltPos + ", hitbox=" + lightningHitbox);
-                        Gdx.app.log("LightningDMG", "    Lightning: X[" + lightningHitbox.x + " to " + (lightningHitbox.x + lightningHitbox.width) + "], Y[" + lightningHitbox.y + " to " + (lightningHitbox.y + lightningHitbox.height) + "]");
-                        Gdx.app.log("LightningDMG", "    Player: X[" + playerBounds.x + " to " + (playerBounds.x + playerBounds.width) + "], Y[" + playerBounds.y + " to " + (playerBounds.y + playerBounds.height) + "]");
-                        
-                        // Check collision
-                        boolean overlaps = lightningHitbox.overlaps(playerBounds);
-                        Gdx.app.log("LightningDMG", "    overlaps()=" + overlaps);
-                        if (overlaps) {
-                            Gdx.app.log("LightningDMG", "  COLLISION DETECTED!");
+                        if (lightningHitbox.overlaps(playerBounds)) {
                             boolean damageApplied = player.getHealthSystem().damage(damageValue, this);
-                            if (damageApplied) {
-                                Gdx.app.log("Lightning", "HIT! Frame: " + currentFrame + ", Damage: " + damageValue + ", Health: " + player.getHealthSystem().getCurrentHealth());
-                            } else {
-                                Gdx.app.log("Lightning", "Damage returned false");
+                            if (damageApplied && debugDisplay) {
+                                Gdx.app.log("BossGuardian", "Lightning hit! Frame: " + currentFrame + " Dmg: " + damageValue);
                             }
-                        } else {
-                            Gdx.app.log("LightningDMG", "  No collision");
                         }
                     }
-                } else {
-                    Gdx.app.log("LightningDMG", "Player or health system is null!");
                 }
             }
         }
@@ -1303,11 +1281,14 @@ public class BossGuardian extends Boss {
         }
     }
     
+    private static final Color DEBUG_YELLOW_TRANS = new Color(1f, 1f, 0f, 0.3f);
+    private static final Color DEBUG_RED_TRANS = new Color(1f, 0.3f, 0.3f, 0.8f);
+    private static final Color DEBUG_CYAN_TRANS = new Color(0f, 1f, 1f, 0.4f);
     public void renderDebug(ShapeRenderer shape) {
         if (!debugDisplay) return;
         
         // Draw guardian sprite bounds (light color)
-        shape.setColor(new Color(1f, 1f, 0f, 0.3f)); // Transparent yellow
+        shape.setColor(DEBUG_YELLOW_TRANS); // Transparent yellow
         shape.rect(guardian1.getBounds().x, guardian1.getBounds().y, 
                   guardian1.getBounds().width, guardian1.getBounds().height);
         shape.rect(guardian2.getBounds().x, guardian2.getBounds().y, 
@@ -1341,14 +1322,14 @@ public class BossGuardian extends Boss {
             int f = guardian3.getAttackFrameIndex();
             if (f >= BOSS2_DMG_FRAME_START && f <= BOSS2_DMG_FRAME_END) {
                 Rectangle liveRect = computeGuardian3DamageRect();
-                shape.setColor(new Color(1f, 0.3f, 0.3f, 0.8f));
+                shape.setColor(DEBUG_RED_TRANS);
                 shape.rect(liveRect.x, liveRect.y, liveRect.width, liveRect.height);
             }
         }
         
         // Debug: Draw lightning damage hitboxes (cyan with light transparency)
         if (lightningActive && randomLightningPositions.size() > 0) {
-            shape.setColor(new Color(0f, 1f, 1f, 0.4f)); // Cyan with transparency
+            shape.setColor(DEBUG_CYAN_TRANS); // Cyan with transparency
             float scaledHitboxWidth = LIGHTNING_HITBOX_WIDTH * lightningScale;
             float scaledHitboxHeight = LIGHTNING_HITBOX_HEIGHT * lightningScale;
             
@@ -1481,10 +1462,16 @@ public class BossGuardian extends Boss {
         }
     }
     
+    @Override
     public void dispose() {
-        guardian1.dispose();
-        guardian2.dispose();
-        guardian3.dispose();
-        if (debugFont != null) debugFont.dispose();
+        super.dispose();
+        if (guardian1 != null) try { guardian1.dispose(); } catch (Exception ignored) {}
+        if (guardian2 != null) try { guardian2.dispose(); } catch (Exception ignored) {}
+        if (guardian3 != null) try { guardian3.dispose(); } catch (Exception ignored) {}
+        if (lightningAnimator != null) { try { lightningAnimator.dispose(); } catch (Exception ignored) {} lightningAnimator = null; }
+        if (debugFont != null) { try { debugFont.dispose(); } catch (Exception ignored) {} debugFont = null; }
+    }
+    public static void disposeStatic() {
+        // placeholder for static resources
     }
 }
