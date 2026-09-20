@@ -149,20 +149,6 @@ public class PlayerIO {
             s.skillC.isActive = c.getActiveState();
             s.skillC.animationTimer = c.getAnimationTimer();
         }
-        if (r != null) {
-            s.skillR = new PlayerState.SkillState();
-            s.skillR.skillName = r.getSkillName();
-            s.skillR.currentCooldown = r.getCurrentCooldown();
-            s.skillR.isActive = r.getActiveState();
-            s.skillR.animationTimer = r.getAnimationTimer();
-        }
-        if (c != null) {
-            s.skillC = new PlayerState.SkillState();
-            s.skillC.skillName = c.getSkillName();
-            s.skillC.currentCooldown = c.getCurrentCooldown();
-            s.skillC.isActive = c.getActiveState();
-            s.skillC.animationTimer = c.getAnimationTimer();
-        }
         if (player.getActiveSkill() != null) {
             s.activeSkill = new PlayerState.SkillState();
             s.activeSkill.skillName = player.getActiveSkill().getSkillName();
@@ -233,26 +219,6 @@ public class PlayerIO {
                     es.setAnimationTimer(s.skillE.animationTimer);
                     es.setActiveState(s.skillE.isActive);
                     if (s.skillE.isActive) player.setActiveSkill(es);
-                }
-            }
-            if (s.skillR != null && s.skillR.skillName != null) {
-                player.equipSkillToSlot(createSkillByName(player, s.skillR.skillName), 'R');
-                com.jjmc.chromashift.player.skill.BaseSkill rs = player.getSkillInSlot('R');
-                if (rs != null) {
-                    rs.setCurrentCooldown(s.skillR.currentCooldown);
-                    rs.setAnimationTimer(s.skillR.animationTimer);
-                    rs.setActiveState(s.skillR.isActive);
-                    if (s.skillR.isActive) player.setActiveSkill(rs);
-                }
-            }
-            if (s.skillC != null && s.skillC.skillName != null) {
-                player.equipSkillToSlot(createSkillByName(player, s.skillC.skillName), 'C');
-                com.jjmc.chromashift.player.skill.BaseSkill cs = player.getSkillInSlot('C');
-                if (cs != null) {
-                    cs.setCurrentCooldown(s.skillC.currentCooldown);
-                    cs.setAnimationTimer(s.skillC.animationTimer);
-                    cs.setActiveState(s.skillC.isActive);
-                    if (s.skillC.isActive) player.setActiveSkill(cs);
                 }
             }
             if (s.skillR != null && s.skillR.skillName != null) {
@@ -486,4 +452,37 @@ public class PlayerIO {
         } catch (Exception ignored) {}
         return null;
     }
+
+    public static void deleteSaveForPlayer(int playerId) {
+        try {
+            java.io.File assetsDir = findProjectAssetsDir();
+            if (assetsDir != null) {
+                java.io.File f = new java.io.File(assetsDir, "saves/players/" + playerId + "/player_save.json");
+                if (f.exists()) f.delete();
+                java.io.File f2 = new java.io.File(assetsDir, "saves/player_" + playerId + ".json");
+                if (f2.exists()) f2.delete();
+                if (playerId == 1) {
+                    java.io.File legacy = new java.io.File(assetsDir, "saves/player_save.json");
+                    if (legacy.exists()) legacy.delete();
+                }
+            }
+            java.io.File buildRes = findBuildResourcesDir();
+            if (buildRes != null) {
+                java.io.File f = new java.io.File(buildRes, "saves/players/" + playerId + "/player_save.json");
+                if (f.exists()) f.delete();
+                java.io.File f2 = new java.io.File(buildRes, "saves/player_" + playerId + ".json");
+                if (f2.exists()) f2.delete();
+                if (playerId == 1) {
+                    java.io.File legacy = new java.io.File(buildRes, "saves/player_save.json");
+                    if (legacy.exists()) legacy.delete();
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public static void deleteSave() {
+        deleteSaveForPlayer(1);
+    }
+
+
 }

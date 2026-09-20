@@ -190,7 +190,7 @@ public class BossGuardian extends Boss {
     private float targetY = 0f;
 
     // Debug flag for overall display
-    private boolean debugDisplay = true; // Set to true to show all debug info
+    private boolean debugDisplay = false; // disabled by default for release // Set to true to show all debug info
 
     // Guardian 1 pre-attack movement/attack state (mirrors Guardian 2 pattern)
     private enum Guardian1AttackState { FORMATION, MOVING_TO_ATTACK, SUMMONING, COOLDOWN }
@@ -1229,39 +1229,17 @@ public class BossGuardian extends Boss {
                     float scaledHitboxWidth = LIGHTNING_HITBOX_WIDTH * lightningScale;
                     float scaledHitboxHeight = LIGHTNING_HITBOX_HEIGHT * lightningScale;
                     
-                    Gdx.app.log("LightningDMG", "Checking frame " + currentFrame + ", damage=" + damageValue + 
-                        ", playerHealth=" + player.getHealthSystem().getCurrentHealth() + 
-                        ", playerBounds=" + playerBounds);
-                    
                     for (Vector2 boltPos : randomLightningPositions) {
-                        // Calculate the actual hitbox (use the content width without sprite padding)
-                        // The 48x361 hitbox is the ACTUAL damage area within the sprite
                         float hitboxLeft = boltPos.x - (scaledHitboxWidth / 2);
-                        float hitboxTop = boltPos.y - scaledHitboxHeight;  // Top of the hitbox (sprite goes from top to pos.y)
-                        
+                        float hitboxTop = boltPos.y - scaledHitboxHeight;
                         Rectangle lightningHitbox = new Rectangle(hitboxLeft, hitboxTop, scaledHitboxWidth, scaledHitboxHeight);
-                        
-                        Gdx.app.log("LightningDMG", "  Bolt at " + boltPos + ", hitbox=" + lightningHitbox);
-                        Gdx.app.log("LightningDMG", "    Lightning: X[" + lightningHitbox.x + " to " + (lightningHitbox.x + lightningHitbox.width) + "], Y[" + lightningHitbox.y + " to " + (lightningHitbox.y + lightningHitbox.height) + "]");
-                        Gdx.app.log("LightningDMG", "    Player: X[" + playerBounds.x + " to " + (playerBounds.x + playerBounds.width) + "], Y[" + playerBounds.y + " to " + (playerBounds.y + playerBounds.height) + "]");
-                        
-                        // Check collision
-                        boolean overlaps = lightningHitbox.overlaps(playerBounds);
-                        Gdx.app.log("LightningDMG", "    overlaps()=" + overlaps);
-                        if (overlaps) {
-                            Gdx.app.log("LightningDMG", "  COLLISION DETECTED!");
+                        if (lightningHitbox.overlaps(playerBounds)) {
                             boolean damageApplied = player.getHealthSystem().damage(damageValue, this);
-                            if (damageApplied) {
-                                Gdx.app.log("Lightning", "HIT! Frame: " + currentFrame + ", Damage: " + damageValue + ", Health: " + player.getHealthSystem().getCurrentHealth());
-                            } else {
-                                Gdx.app.log("Lightning", "Damage returned false");
+                            if (damageApplied && debugDisplay) {
+                                Gdx.app.log("BossGuardian", "Lightning hit! Frame: " + currentFrame + " Dmg: " + damageValue);
                             }
-                        } else {
-                            Gdx.app.log("LightningDMG", "  No collision");
                         }
                     }
-                } else {
-                    Gdx.app.log("LightningDMG", "Player or health system is null!");
                 }
             }
         }

@@ -136,8 +136,6 @@ public final class LevelLoader {
                 int cols = Math.max(1, idd.cols);
                 int rows = Math.max(1, idd.rows);
 
-                // Always honor saved position and allow anywhere: no anchoring.
-                Wall dummy = new Wall(idd.x, idd.y - 32, Math.max(1, cols), 1);
                 float os = 3f, cs = 3f;
                 try {
                     os = (idd.openSpeed > 0f) ? idd.openSpeed : 3f;
@@ -147,7 +145,8 @@ public final class LevelLoader {
                     cs = (idd.closeSpeed > 0f) ? idd.closeSpeed : 3f;
                 } catch (Exception ignored) {
                 }
-                Door d = new Door(idd.x, dummy, cols, rows, dir, os, cs);
+                // Use exact saved position - new constructor honors x,y directly
+                Door d = new Door(idd.x, idd.y, cols, rows, dir, os, cs);
 
                 out.interactables.add(d);
                 out.solids.add(d);

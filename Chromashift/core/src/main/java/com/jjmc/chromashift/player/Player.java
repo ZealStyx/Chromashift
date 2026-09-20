@@ -210,8 +210,9 @@ public class Player {
 
                 // Shield absorbs first
                 if (shield > 0) {
-                    shield--;
-                    // Hit fully absorbed
+                    shield = Math.max(0, shield - 1);
+                    // Notify via health system with 0 delta to trigger UI flashes if needed
+                    // Shield is polled by UI, so no health change needed
                     return true;
                 }
 
@@ -289,40 +290,33 @@ public class Player {
     private boolean isDying = false;
 
     public void update(float delta, float groundY, Array<Wall> walls) {
-        // Health tick
-        if (health != null)
-            health.update(delta);
-
-        // Respawn timers
-        if (respawnInvulRemaining > 0f) {
-            respawnInvulRemaining -= delta;
-            if (respawnInvulRemaining <= 0f) {
-                health.setInvulnerable(false);
-                respawnInvulRemaining = 0f;
-            }
-        }
-        if (respawnStunRemaining > 0f) {
-            respawnStunRemaining -= delta;
-            if (respawnStunRemaining <= 0f) {
-                isStunned = false;
-                respawnStunRemaining = 0f;
-            }
-        }
-
-        // Tick slow debuff
-        if (slowRemaining > 0f) {
-            slowRemaining -= delta;
-            if (slowRemaining <= 0f) {
-                slowRemaining = 0f;
-                speedMultiplier = 1f;
-            }
-        }
-
-        // No movement if stunned
+        // Delegate to main update with null solids - timers handled there
         if (!isStunned) {
             update(delta, groundY, walls, null);
         } else {
-            // Anim only while stunned
+            // Still tick health and timers even when stunned
+            if (health != null) health.update(delta);
+            if (respawnInvulRemaining > 0f) {
+                respawnInvulRemaining -= delta;
+                if (respawnInvulRemaining <= 0f) {
+                    health.setInvulnerable(false);
+                    respawnInvulRemaining = 0f;
+                }
+            }
+            if (respawnStunRemaining > 0f) {
+                respawnStunRemaining -= delta;
+                if (respawnStunRemaining <= 0f) {
+                    isStunned = false;
+                    respawnStunRemaining = 0f;
+                }
+            }
+            if (slowRemaining > 0f) {
+                slowRemaining -= delta;
+                if (slowRemaining <= 0f) {
+                    slowRemaining = 0f;
+                    speedMultiplier = 1f;
+                }
+            }
             anim.update(delta);
             setAnimation("idle", facingLeft);
         }
@@ -560,125 +554,91 @@ public class Player {
         }
     }
 
+    /**
+     * Main gameplay update — called from GameSceneScreen.
+     * Handles interactables, pickup/throw, and delegates movement to the core update.
+     */
     public void update(float delta, float groundY, Array<Solid> solids, Array<Interactable> interactables, float x) {
         // Store solids reference for skill collision detection
         this.solids = solids;
         
         Array<Wall> walls = new Array<>();
-        for (Solid s : solids) {
-            if (!s.isBlocking())
-                continue;
-            if (s instanceof Wall w)
-                walls.add(w);
+        if (solids != null) {
+            for (Solid s : solids) {
+                if (!s.isBlocking())
+                    continue;
+                if (s instanceof Wall w)
+                    walls.add(w);
+            }
         }
         groundedBySolid = false;
 
-        // health handled in the chained update
+        // Core movement / physics
         update(delta, groundY, walls, solids);
 
         if (onGround || onWall || wallSliding)
             dashUsed = false;
 
         // Handle interactables
-        Rectangle playerHitbox = getHitboxRect();
-        for (Interactable i : interactables) {
-            i.checkInteraction(playerHitbox);
-        }
-        if (!isStunned && Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+        if (interactables != null) {
+            Rectangle playerHitbox = getHitboxRect();
             for (Interactable i : interactables) {
-                // Activate any interactable that reports it can be interacted with.
-                // Buttons (pressure plates) should return false for canInteract()
-                // so they won't be triggered by F; levers and similar will.
-                if (i.canInteract()) {
-                    i.interact();
+                i.checkInteraction(playerHitbox);
+            }
+            if (!isStunned && Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+                for (Interactable i : interactables) {
+                    if (i.canInteract()) {
+                        i.interact();
+                    }
                 }
             }
-        }
-        // Pickup/throw with G key (only when not stunned)
-        if (!isStunned && com.badlogic.gdx.Gdx.input.isButtonJustPressed(com.badlogic.gdx.Input.Buttons.RIGHT)) {
-            if (heldObject != null) {
-                // Get mouse position in world coordinates
-                com.badlogic.gdx.math.Vector3 mousePos = new com.badlogic.gdx.math.Vector3(
-                        Gdx.input.getX(), Gdx.input.getY(), 0);
-                if (gameCamera != null) {
-                    gameCamera.unproject(mousePos);
-                }
-                float mouseX = mousePos.x;
-                float mouseY = mousePos.y;
-
-                // Get player center position for throw origin
-                float playerCenterX = getHitboxX() + getHitboxWidth() / 2f;
-                float playerCenterY = getHitboxY() + getHitboxHeight() / 2f;
-
-                // Calculate throw direction and velocity
-                float dirX = mouseX - playerCenterX;
-                float dirY = mouseY - playerCenterY;
-                float len = (float) Math.sqrt(dirX * dirX + dirY * dirY);
-
-                if (len > 0.001f) {
-                    // Normalize and scale to desired throw speed
-                    float throwSpeed = 400f;
-                    float vx = (dirX / len) * throwSpeed;
-                    float vy = (dirY / len) * throwSpeed;
-                    throwHeldWithVelocity(vx, vy);
+            // Pickup/throw with right mouse (only when not stunned)
+            if (!isStunned && com.badlogic.gdx.Gdx.input.isButtonJustPressed(com.badlogic.gdx.Input.Buttons.RIGHT)) {
+                if (heldObject != null) {
+                    com.badlogic.gdx.math.Vector3 mousePos = new com.badlogic.gdx.math.Vector3(
+                            Gdx.input.getX(), Gdx.input.getY(), 0);
+                    if (gameCamera != null) {
+                        gameCamera.unproject(mousePos);
+                    }
+                    float mouseX = mousePos.x;
+                    float mouseY = mousePos.y;
+                    float playerCenterX = getHitboxX() + getHitboxWidth() / 2f;
+                    float playerCenterY = getHitboxY() + getHitboxHeight() / 2f;
+                    float dirX = mouseX - playerCenterX;
+                    float dirY = mouseY - playerCenterY;
+                    float len = (float) Math.sqrt(dirX * dirX + dirY * dirY);
+                    if (len > 0.001f) {
+                        float throwSpeed = 400f;
+                        float vx = (dirX / len) * throwSpeed;
+                        float vy = (dirY / len) * throwSpeed;
+                        throwHeldWithVelocity(vx, vy);
+                    } else {
+                        heldObject.drop();
+                        heldObject = null;
+                    }
                 } else {
-                    // If no direction, just drop it
-                    heldObject.drop();
-                    heldObject = null;
-                }
-            } else {
-                // Try to pick up nearby object
-                for (Interactable i : interactables) {
-                    if (i instanceof Pickable p && i.canInteract()) {
-                        p.pickUp(this);
-                        heldObject = p;
-                        break;
+                    for (Interactable i : interactables) {
+                        if (i instanceof Pickable p && i.canInteract()) {
+                            p.pickUp(this);
+                            heldObject = p;
+                            break;
+                        }
                     }
                 }
             }
         }
-        // pickup/throw handled by screen (needs camera/mouse); Player exposes
-        // held-object API
     }
 
+    /**
+     * @deprecated Use update(delta, groundY, solids, interactables, float) instead.
+     * Kept for backward compatibility with LevelMaker.
+     */
+    @Deprecated
     public void update(float delta, float groundY, Array<Solid> solids, Array<Interactable> interactables,
             boolean dummy) {
-        // Store solids reference for skill collision detection
-        this.solids = solids;
-        
-        Array<Wall> walls = new Array<>();
-        for (Solid s : solids) {
-            if (!s.isBlocking())
-                continue;
-            if (s instanceof Wall w)
-                walls.add(w);
-        }
-        groundedBySolid = false;
-
-        // health handled in the chained update
-        update(delta, groundY, walls, solids);
-
-        if (onGround || onWall || wallSliding)
-            dashUsed = false;
-
-        // Handle interactables
-        Rectangle playerHitbox = getHitboxRect();
-        for (Interactable i : interactables) {
-            i.checkInteraction(playerHitbox);
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
-            for (Interactable i : interactables) {
-                // Activate any interactable that reports it can be interacted with.
-                // Buttons (pressure plates) should return false for canInteract()
-                // so they won't be triggered by F; levers and similar will.
-                if (i.canInteract()) {
-                    i.interact();
-                }
-            }
-        }
-
-        // Check for enemy hits when attacking
-        if (isAttacking() && anim.getCurrentFrameIndex() == 3) { // Hit frame at frame 3
+        update(delta, groundY, solids, interactables, 0f);
+        // Legacy extra check for enemy hits on attack frame
+        if (isAttacking() && anim.getCurrentFrameIndex() == 3) {
             PlayerLogic.checkEnemyHits(this, enemies);
         }
     }
@@ -1010,8 +970,9 @@ public class Player {
         return activeSkill;
     }
     
+    private static final Array<com.jjmc.chromashift.environment.Solid> EMPTY_SOLIDS = new Array<>(0);
     public Array<com.jjmc.chromashift.environment.Solid> getSolids() {
-        return solids != null ? solids : new Array<>();
+        return solids != null ? solids : EMPTY_SOLIDS;
     }
     
     public Array<com.jjmc.chromashift.environment.enemy.Enemy> getEnemies() {
@@ -1139,7 +1100,7 @@ public class Player {
     }
 
     public void setShield(int shield) {
-        this.shield = shield;
+        this.shield = Math.max(0, Math.min(maxShield, shield));
     }
 
     public void addShield(int amount) {

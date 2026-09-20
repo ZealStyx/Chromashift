@@ -942,19 +942,17 @@ public class GameSceneScreen implements Screen {
         Gdx.gl.glClearColor(0.08f, 0.09f, 0.12f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        shape.setProjectionMatrix(camController.getCamera().combined);
-        // Draw Tentacles (behind everything or in front? Let's draw behind player but
-        // in
-        // front of walls)
-        // Actually, ShapeRenderer needs begin/end.
-        // The existing code ends 'shape' before batch.begin().
-        // We can draw tentacles here.
-        for (com.jjmc.chromashift.environment.enemy.Tentacle t : tentacles) {
-            if (t.isAlive()) {
-                t.draw(shape);
+        // Draw Tentacles using ShapeRenderer (each tentacle manages its own begin/end)
+        // Set projection once before drawing
+        if (shape != null) {
+            shape.setProjectionMatrix(camController.getCamera().combined);
+            for (com.jjmc.chromashift.environment.enemy.Tentacle t : tentacles) {
+                if (t.isAlive()) {
+                    t.draw(shape);
+                }
             }
+            // No outer begin/end — Tentacle.draw() handles it internally
         }
-        shape.end();
 
         batch.setProjectionMatrix(camController.getCamera().combined);
         batch.begin();
@@ -1546,8 +1544,8 @@ public class GameSceneScreen implements Screen {
 
     /**
      * Returns the next level path based on current level.
-     * Progression order: level1 -> level2 -> level3 -> level4 -> level5
-     * -> level6 -> bossroom
+     * Progression order: tutorial -> level1 -> level2 -> level3 -> level4 -> level5
+     * -> level6 -> bossroom -> bossroom1 -> menu
      */
     private String getNextLevelPath(String current) {
         if (current == null)
@@ -1556,17 +1554,16 @@ public class GameSceneScreen implements Screen {
         // Normalize path for comparison
         String normalized = current.toLowerCase().replace("\\", "/");
 
-        if (normalized.contains("level1")) return "levels/level2.json";
+        if (normalized.contains("tutorial")) return "levels/level1.json";
         if (normalized.contains("level1")) return "levels/level2.json";
         if (normalized.contains("level2")) return "levels/level3.json";
-        if (normalized.contains("level3")) return "levels/bossroom.json";
-        if (normalized.contains("bossroom")) return null;
-        else return null;
-        // if (normalized.contains("level4")) return "levels/level5.json";
-        // if (normalized.contains("level5")) return "levels/level6.json";
-        // if (normalized.contains("level6")) return "levels/bossroom.json";
-        // if (normalized.contains("bossroom")) return null; // final stage
-        // else return null; // unknown level
+        if (normalized.contains("level3")) return "levels/level4.json";
+        if (normalized.contains("level4")) return "levels/level5.json";
+        if (normalized.contains("level5")) return "levels/level6.json";
+        if (normalized.contains("level6")) return "levels/bossroom.json";
+        if (normalized.contains("bossroom1")) return null;
+        if (normalized.contains("bossroom")) return "levels/bossroom1.json";
+        return null;
     }
     
     /**

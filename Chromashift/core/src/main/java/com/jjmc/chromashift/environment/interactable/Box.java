@@ -17,6 +17,7 @@ public class Box implements Interactable, Pickable, com.jjmc.chromashift.environ
     private float x, y;
     private float width = 24f, height = 24f;
     private float vx = 0f, vy = 0f;
+    private boolean wasGroundedLastFrame = false;
     private final Array<Solid> solids;
     private Array<Interactable> interactables;
     private final Rectangle bounds;
@@ -83,26 +84,24 @@ public class Box implements Interactable, Pickable, com.jjmc.chromashift.environ
         float gravity = -800f;
         vy += gravity * delta;
         
-        // Apply friction/damping
-        float groundFriction = 40f;  // Higher = more friction
-        float airDamping = 1f;      // Higher = more air resistance
+        // Apply friction/damping - track grounded via collision flag
+        float groundFriction = 40f;
+        float airDamping = 1f;
         
-        // Check if on ground (vy close to 0 and collision detected)
-        boolean onGround = Math.abs(vy) < 0.1f;
+        // Determine if on ground by checking if vertical velocity was zeroed by collision last frame
+        // We use a dedicated flag set after collision resolution
+        boolean onGround = Math.abs(vy) < 1f && wasGroundedLastFrame;
         if (onGround) {
-            // Direct velocity reduction for ground friction
-            float frictionForce = groundFriction * 60f; // Scale for better control
+            float frictionForce = groundFriction * 60f;
             if (Math.abs(vx) <= frictionForce * delta) {
-                vx = 0; // Stop completely if speed is very low
+                vx = 0;
             } else {
-                // Apply friction in opposite direction of movement
                 float direction = vx > 0 ? -1 : 1;
                 vx += direction * frictionForce * delta;
             }
         } else {
-            // Air resistance
             vx *= (1f - airDamping * delta);
-            vy *= (1f - airDamping * delta);
+            vy *= (1f - airDamping * delta * 0.5f);
         }
 
         // Integrate
@@ -132,6 +131,10 @@ public class Box implements Interactable, Pickable, com.jjmc.chromashift.environ
             x = resolved.x;
             y = resolved.y;
             bounds.set(x, y, width, height);
+            // Track if we landed on ground (vertical correction upward)
+            wasGroundedLastFrame = (resolved.y > before.y) || (Math.abs(vy) < 0.1f && resolved.y == before.y);
+        } else {
+            wasGroundedLastFrame = false;
         }
         
         // Handle collisions with other interactables
@@ -154,19 +157,27 @@ public class Box implements Interactable, Pickable, com.jjmc.chromashift.environ
                             dx /= len;
                             dy /= len;
                             
-                            // Resolve overlap
-                            float overlap = (bounds.width + otherBounds.width)/2 - len;
+                            // Resolve overlap - push both apart equally to avoid jitter
+                            float minDist = (bounds.width + otherBounds.width) * 0.5f;
+                            float overlap = minDist - len;
                             if (overlap > 0) {
-                                x += dx * overlap/2;
-                                y += dy * overlap/2;
+                                float push = overlap * 0.5f + 0.1f;
+                                x += dx * push;
+                                y += dy * push;
                                 bounds.setPosition(x, y);
+                                // Also push other if it's a Box/Orb
+                                if (other instanceof Box b) {
+                                    b.x -= dx * push;
+                                    b.y -= dy * push;
+                                    b.bounds.setPosition(b.x, b.y);
+                                } else if (other instanceof Orb o) {
+                                    o.setPosition(o.getX() - dx * push, o.getY() - dy * push);
+                                }
                                 
-                                // Exchange velocities (elastic collision)
+                                // Exchange velocities with damping (elastic collision)
                                 if (other instanceof Box || other instanceof Orb) {
                                     float tmpVx = vx;
                                     float tmpVy = vy;
-                                    
-                                    // Get other object's velocity if available
                                     float otherVx = 0, otherVy = 0;
                                     if (other instanceof Box b) {
                                         otherVx = b.getVelocityX();
@@ -175,14 +186,13 @@ public class Box implements Interactable, Pickable, com.jjmc.chromashift.environ
                                         otherVx = o.getVelocityX();
                                         otherVy = o.getVelocityY();
                                     }
-                                    
-                                    // Apply collision response
-                                    vx = otherVx;
-                                    vy = otherVy;
+                                    float damping = 0.8f;
+                                    vx = otherVx * damping;
+                                    vy = otherVy * damping;
                                     if (other instanceof Box b) {
-                                        b.setVelocity(tmpVx, tmpVy);
+                                        b.setVelocity(tmpVx * damping, tmpVy * damping);
                                     } else if (other instanceof Orb o) {
-                                        o.setVelocity(tmpVx, tmpVy);
+                                        o.setVelocity(tmpVx * damping, tmpVy * damping);
                                     }
                                 }
                             }
@@ -352,7 +362,7 @@ public class Box implements Interactable, Pickable, com.jjmc.chromashift.environ
         bounds.set(x, y, width, height);
     }
 
-    // PIXEL for batch drawing (lazy)
+    // PIXEL for batch drawing (lazy) - shared white pixel
     private static com.badlogic.gdx.graphics.Texture PIXEL;
     private static void ensurePixel() {
         if (PIXEL == null) {
@@ -361,6 +371,12 @@ public class Box implements Interactable, Pickable, com.jjmc.chromashift.environ
             pm.fill();
             PIXEL = new com.badlogic.gdx.graphics.Texture(pm);
             pm.dispose();
+        }
+    }
+    public static void disposeStatic() {
+        if (PIXEL != null) {
+            try { PIXEL.dispose(); } catch (Exception ignored) {}
+            PIXEL = null;
         }
     }
 

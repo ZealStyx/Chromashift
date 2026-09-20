@@ -94,11 +94,15 @@ public class DashSkill extends BaseSkill {
         float rayMin = Math.min(rayStart, rayEnd);
         float rayMax = Math.max(rayStart, rayEnd);
         
+        // Use full hitbox for vertical overlap check
+        com.badlogic.gdx.math.Rectangle playerHitbox = player.getHitboxRect();
         for (Solid solid : player.getSolids()) {
             if (!solid.isBlocking()) continue;
-            Rectangle b = solid.getBounds();
-            // vertical overlap with player
-            if (b.y > playerBottom + player.getHitboxHeight() || b.y + b.height < playerBottom) continue;
+            Rectangle b = solid.getCollisionBounds();
+            if (b == null) b = solid.getBounds();
+            if (b == null) continue;
+            // vertical overlap with player full hitbox
+            if (b.y > playerHitbox.y + playerHitbox.height || b.y + b.height < playerHitbox.y) continue;
             
             // horizontal overlap with dash ray
             float solidLeft = b.x;
