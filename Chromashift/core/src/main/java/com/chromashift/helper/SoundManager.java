@@ -51,6 +51,11 @@ public class SoundManager {
     // ---------------- Audio Loading ----------------
 
     public static void addSound(String name, String path) {
+        Sound prev = sounds.remove(name);
+        if (prev != null) {
+            try { prev.dispose(); } catch (Exception ignored) {}
+            soundInstances.remove(name);
+        }
         sounds.put(name, Gdx.audio.newSound(Gdx.files.internal(path)));
     }
 
@@ -58,6 +63,16 @@ public class SoundManager {
         Music music = Gdx.audio.newMusic(Gdx.files.internal(path));
         music.setLooping(loop);
         musicGroups.computeIfAbsent(group, k -> new ArrayList<>()).add(music);
+    }
+    public static void removeMusicGroup(String group) {
+        List<Music> list = musicGroups.remove(group);
+        if (list != null) {
+            for (Music m : list) {
+                try { m.stop(); m.dispose(); } catch (Exception ignored) {}
+            }
+        }
+        shuffleQueues.remove(group);
+        currentTracks.remove(group);
     }
 
     public static void addLoopingSfx(String name, String path) {
@@ -300,17 +315,18 @@ public class SoundManager {
 
     public static void dispose() {
         stopAll();
-        for (Sound s : sounds.values()) s.dispose();
+        for (Sound s : sounds.values()) { try { s.dispose(); } catch (Exception ignored) {} }
         for (List<Music> list : musicGroups.values()) {
-            for (Music m : list) m.dispose();
+            for (Music m : list) { try { m.dispose(); } catch (Exception ignored) {} }
         }
-        for (Music m : loopingSfx.values()) m.dispose();
+        for (Music m : loopingSfx.values()) { try { m.dispose(); } catch (Exception ignored) {} }
         loopingSfx.clear();
         sounds.clear();
         musicGroups.clear();
         shuffleQueues.clear();
         soundInstances.clear();
         currentTracks.clear();
+        try { Timer.instance().clear(); } catch (Exception ignored) {}
     }
 
     // ---------------- Helpers ----------------
